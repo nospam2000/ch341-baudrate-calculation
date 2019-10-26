@@ -5,7 +5,7 @@ There is no publicly available document which explains the details about the reg
 hardware of the CH341/CH340 usb serial adapter chips from WinChipHead (WCN).
 
 This project is meant as a reference for drivers like the Linux and FreeBSD kernel or the Mac
-OSX kernel.
+OSX kernel because I really would like to use ESP8266 and ESP32 boards with a baud rate of 921600.
 
 ## How is the baud rate calculated?
 
