@@ -1,5 +1,5 @@
 diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index 578596d30..f08b5090e 100644
+index 578596d30..9748f607f 100644
 --- a/drivers/usb/serial/ch341.c
 +++ b/drivers/usb/serial/ch341.c
 @@ -54,8 +54,7 @@
@@ -8,7 +8,7 @@ index 578596d30..f08b5090e 100644
  /*******************************/
 -#define CH341_BAUDBASE_FACTOR 1532620800
 -#define CH341_BAUDBASE_DIVMAX 3
-+#define CH341_CRYSTAL_FREQ    (12000000UL)
++#define CH341_OSC_FREQ    (12000000UL)
  
  /* Break support - the information used to implement this was gleaned from
   * the Net/FreeBSD uchcom.c driver by Takanori Watanabe.  Domo arigato.
@@ -23,16 +23,39 @@ index 578596d30..f08b5090e 100644
  #define CH341_NBREAK_BITS      0x01
  
  #define CH341_LCR_ENABLE_RX    0x80
-@@ -150,38 +152,68 @@ static int ch341_control_in(struct usb_device *dev,
+@@ -98,6 +100,22 @@ struct ch341_private {
+ 	u8 lcr;
+ };
+ 
++struct ch341_prescalers {
++	u8 reg_value;
++	u32 prescaler_divisor;
++};
++static const struct ch341_prescalers prescaler_table[] = {
++	{ 7, 1 },
++	{ 3, 2 },
++	{ 6, 8 },
++	{ 2, 16 },
++	{ 5, 64 },
++	{ 1, 128 },
++	{ 4, 512 },
++	{ 0, 1024 }
++};
++#define PRESCALER_TABLE_SIZE (sizeof(prescaler_table) / sizeof(prescaler_table[0]))
++
+ static void ch341_set_termios(struct tty_struct *tty,
+ 			      struct usb_serial_port *port,
+ 			      struct ktermios *old_termios);
+@@ -150,38 +168,65 @@ static int ch341_control_in(struct usb_device *dev,
  static int ch341_set_baudrate_lcr(struct usb_device *dev,
  				  struct ch341_private *priv, u8 lcr)
  {
 -	short a;
 +	unsigned long divisor;
 +	short prescaler_index;
-+	u8 divisor_register_value;
++	u8 divisor_regvalue;
 +	unsigned long prescaler;
-+	short prescaler_register_value; 
++	short prescaler_regvalue; 
 +	bool foundDivisor;
  	int r;
 -	unsigned long factor;
@@ -57,11 +80,10 @@ index 578596d30..f08b5090e 100644
 +	prescaler_index = 8; // illegal value, just to suppress compiler warning
 +	// start with the smallest possible prescaler value to get the
 +	// best precision at first match (largest mantissa value)
-+	for (prescaler_index = 7; prescaler_index >= 0; --prescaler_index) {
-+		prescaler = ((prescaler_index & BIT(2)) ? 1 : 2)
-+			* ((prescaler_index & BIT(1)) ? 1 : 64)
-+			* ((prescaler_index & BIT(0)) ? 1 : 8);
-+		divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * priv->baud_rate) + 1) / 2;
++	for (prescaler_index = 0; prescaler_index <= PRESCALER_TABLE_SIZE;
++			++prescaler_index) {
++		prescaler = prescaler_table[prescaler_index].prescaler_divisor;
++		divisor = (2 * CH341_OSC_FREQ / (prescaler * priv->baud_rate) + 1) / 2;
 +		if (divisor <= 256 && divisor >= 9) {
 +			foundDivisor = true;
 +			break;
@@ -89,17 +111,15 @@ index 578596d30..f08b5090e 100644
 -	a |= BIT(7);
 -
 -	r = ch341_control_out(dev, CH341_REQ_WRITE_REG, 0x1312, a);
-+	prescaler_register_value = ((prescaler_index >> 1) & (BIT(0) | BIT(1)))
-+		| ((prescaler_index << 2) & BIT(2))
-+		| BIT(7);
-+	divisor_register_value = 256 - divisor;
-+	printk("ch341.c: baud_rate %u, prescaler %lu, prescaler_register_value 0x%x,"
-+		" divisor %lu, divisor_register_value 0x%x, foundDivisor %d\n",
-+		priv->baud_rate, prescaler, prescaler_register_value, divisor,
-+		divisor_register_value, foundDivisor);
++	prescaler_regvalue = prescaler_table[prescaler_index].reg_value | BIT(7);
++	divisor_regvalue = 256 - divisor;
++	printk("ch341.c: baud_rate %u, prescaler %lu, prescaler_regvalue 0x%x,"
++		" divisor %lu, divisor_regvalue 0x%x, foundDivisor %d\n",
++		priv->baud_rate, prescaler, prescaler_regvalue, divisor,
++		divisor_regvalue, foundDivisor);
 +	r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
 +		(CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-+		(divisor_register_value << 8) | prescaler_register_value);
++		(divisor_regvalue << 8) | prescaler_regvalue);
  	if (r)
  		return r;
  
