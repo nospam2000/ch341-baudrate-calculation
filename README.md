@@ -112,7 +112,8 @@ When it finds a prescaler value which gives a divisor within the allowed range f
 
 Write to registers can only be performed two registers at a time. To write to a single register
 either write two times the same value to the same register, or use a dummy register to write a
-dummy value as second value.
+dummy value as second value. Fortunately we need to write exactly two register so we need one
+call and one USB request.
 
     prescaler_register_value |= BIT(7); // don't wait until buffer contains 32 characters before sending
     divisor_register_value = 256 - divisor;
