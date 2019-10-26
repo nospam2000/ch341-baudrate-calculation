@@ -52,7 +52,7 @@ Each bit has a meaning on its own:
  - bit 7: =1 turns off waiting for buffer filled with 32 bytes before notifying the USB host.
    All drivers set this bit.
 
-For example to get a prescaler of 16 use a value of %10000010 to turn off the x64 divider
+For example to get a prescaler of 16 use a value of `%10000010 == 0x82` to turn off the x64 divider
 and activate the x2 and x8 dividers.
 
 The meaning of the bits 3 to 6 is unknown, all drivers set them to 0.
