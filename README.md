@@ -7,16 +7,19 @@ hardware of the CH341/CH340 usb serial adapter chips from WinChipHead (WCN).
 This project is meant as a reference for drivers like the Linux and FreeBSD kernel or the Mac
 OSX kernel.
 
-## How is the baud rate created?
+## How is the baud rate calculated?
 
 It took me a while to figure it out, because all drivers are using magic constants like
 1532620800 which are not clear and none of the source code I have seen does it completely right.
-The hardware has a great flexibility and can do any baud rate with a error smaller than 0.2%.
+The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium baud rates like 38400, but almost all of
-them fail at higher baud rates of 921600 or even 2000000 and at unusual baud rates like 256000.
+them fail at higher baud rates like 921600 or 2000000 and at unusual baud rates like 256000.
 
-The base formular is very simply: baud rate = 12MHz / prescaler / divisor
- - '12 MHz' is the oszillator frequency which is also needed for the USB clock
+The base formular is very simply:
+
+***baud rate = 12000000 / prescaler / divisor***
+
+ - '12000000' is the 12 MHz oszillator frequency which is also needed for the USB bus clock
  - 'prescaler' scales down the 12 MHz clock by a fixed dividing factor between 1 and 1024 which
    can be choosen from the following 8 values: 1, 2, 8, 16, 64, 128, 512, 1024.
    Most drivers only use the following factors : 2, 16, 128 and 1024
@@ -60,9 +63,9 @@ that the divisor is within this range. The smaller the prescaler the larger and 
 better the divisor to get a small baud rate error.
 The maximum supported baud rate is 2000000. 
 
-#define CH341_CRYSTAL_FREQ (12000000UL)
-divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 1) / 2
-CH341_REG_BPS_DIV = 256 - divisor
+    #define CH341_CRYSTAL_FREQ (12000000UL)
+    divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 1) / 2
+    CH341_REG_BPS_DIV = 256 - divisor
 
 Why not just (CH341_CRYSTAL_FREQ / (prescaler * baud_rate))? Because we are using integer
 arithmetic and truncating values after the division leads to an error which only goes into
@@ -81,25 +84,27 @@ You can use this code which iterates through all eight prescalar values in this 
 When it finds a prescaler value which gives a divisor within the allowed range from 
 1 to 256 it calculates prescaler_register_value and set foundDivisor=true.
 
-        unsigned long divisor;
-        u8 divisor_register_value;
-        unsigned long prescaler;
-        short prescaler_register_value;
-        bool foundDivisor = false;
-        // start with the smallest possible prescaler value to get the best precision
-        // at first match (largest mantissa value)
-        for(short prescaler_index = 7; prescaler_index >= 0; --prescaler_index) {
-                prescaler = ((prescaler_index & BIT(2)) ? 1 : 2)
-                        * ((prescaler_index & BIT(1)) ? 1 : 64)
-                        * ((prescaler_index & BIT(0)) ? 1 : 8);
-                divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * priv->baud_rate) + 1) / 2;
-                if (divisor >= 1 && divisor <= 256) {
-                        foundDivisor = true;
-                        prescaler_register_value = ((prescaler_index >> 1) & (BIT(0) | BIT(1)))
-                                | ((prescaler_index << 2) & BIT(2));
-                        break;
-                }
-        }
+*****TODO: the code needs to be tested*****
+
+    unsigned long divisor;
+    u8 divisor_register_value;
+    unsigned long prescaler;
+    short prescaler_register_value;
+    bool foundDivisor = false;
+    // start with the smallest possible prescaler value to get the best precision
+    // at first match (largest mantissa value)
+    for(short prescaler_index = 7; prescaler_index >= 0; --prescaler_index) {
+      prescaler = ((prescaler_index & BIT(2)) ? 1 : 2)
+        * ((prescaler_index & BIT(1)) ? 1 : 64)
+        * ((prescaler_index & BIT(0)) ? 1 : 8);
+      divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * priv->baud_rate) + 1) / 2;
+      if (divisor >= 1 && divisor <= 256) {
+        foundDivisor = true;
+        prescaler_register_value = ((prescaler_index >> 1) & (BIT(0) | BIT(1)))
+          | ((prescaler_index << 2) & BIT(2));
+        break;
+      }
+    }
 
 ## How to set the registers?
 
@@ -107,12 +112,11 @@ Write to registers can only be performed two registers at a time. To write to a 
 either write two times the same value to the same register, or use a dummy register to write a
 dummy value as second value.
 
-prescaler_register_value |= BIT(7); // don't wait until buffer contains 32 characters before sending
-divisor_register_value = 256 - divisor;
-ch341_control_out(dev, CH341_REQ_WRITE_REG,
-(CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-(divisor_register_value << 8) | prescaler_register_value);
-
+ prescaler_register_value |= BIT(7); // don't wait until buffer contains 32 characters before sending
+ divisor_register_value = 256 - divisor;
+ ch341_control_out(dev, CH341_REQ_WRITE_REG,
+  (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
+  (divisor_register_value << 8) | prescaler_register_value);
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
