@@ -58,7 +58,7 @@ and activate the x2 and x8 dividers.
 The meaning of the bits 3 to 6 is unknown, all drivers set them to 0.
 They might contain some more modes about when to notify the host about newly received values.
 
-### Divisor register 0x13 (Linux: CH341_REG_BPS_DIV, UCHCOM_REG_BPS_DIV)
+### Divisor register 0x13 (Linux: CH341_REG_BPS_DIV, FreeBSD: UCHCOM_REG_BPS_DIV)
 
 The divisor must be between 1 and 256. That means you have to choose a prescaler value so
 that the divisor is within this range. The smaller the prescaler the larger and typical
