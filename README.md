@@ -74,17 +74,22 @@ arithmetic and truncating values after the division leads to an error which only
 the positive direction because the fractional part of divisor is lost.
 
 With floating point arithmetic you would do:
-divisor = TRUNC(CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 0.5)
+
+    divisor = TRUNC(CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 0.5)
+
 which is equal to
-divisor = TRUNC((10 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 5) / 10)
+
+    divisor = TRUNC((10 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 5) / 10)
+
 The formula above does the same but using dual system integer arithmetic.
 
-## How to choose the prescaler value
+## How to choose the prescaler value and write the calculation code
 
 You can use this code which iterates through all eight prescalar values in this order:
   1, 2, 8, 16, 64, 128, 512, 1024
+
 When it finds a prescaler value which gives a divisor within the allowed range from 
-1 to 256 it calculates prescaler_register_value and set foundDivisor=true.
+1 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
 
 *****TODO: the code needs to be tested*****
 
@@ -120,6 +125,29 @@ call and one USB request.
     ch341_control_out(dev, CH341_REQ_WRITE_REG,
       (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
       (divisor_register_value << 8) | prescaler_register_value);
+
+## How to calculate the error
+To calculate the real baud rate and the error, you have to use the calculated register values and do
+the calculation with the formula ***baud rate = 12000000 / prescaler / divisor***
+Because of rounding you always have an error.
+
+For example the source from above gives the value `prescaler=1` and `divider=13` for the requested 
+baud rate of 921600 (complete divisor=13):
+
+    real baud rate = 12000000 / 1 / 13 = 923076.92 baud
+    baud rate error = (923076.92 / 921600 - 1) * 100% = 0.16%
+
+With `prescaler=2` and `divider=7` for 921600 baud (complete divisor=14 instead of 13):
+
+    real baud rate = 12000000 / 2 / 7 = 857142.86 baud
+    baud rate error = (857142.86 / 921600 - 1) * 100% = -6.99%
+
+With `prescaler=2` and `divider=6` for 921600 baud (complete divisor=12 instead of 13):
+
+    real baud rate = 12000000 / 2 / 6 = 1000000.00 baud
+    baud rate error = (1000000.00 / 921600 - 1) * 100% = 8.51%
+
+So you can see that choosing the correct prescaler value and using correct rounding is essential to get a small error.
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
