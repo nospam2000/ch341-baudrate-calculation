@@ -114,11 +114,11 @@ Write to registers can only be performed two registers at a time. To write to a 
 either write two times the same value to the same register, or use a dummy register to write a
 dummy value as second value.
 
- prescaler_register_value |= BIT(7); // don't wait until buffer contains 32 characters before sending
- divisor_register_value = 256 - divisor;
- ch341_control_out(dev, CH341_REQ_WRITE_REG,
-  (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-  (divisor_register_value << 8) | prescaler_register_value);
+    prescaler_register_value |= BIT(7); // don't wait until buffer contains 32 characters before sending
+    divisor_register_value = 256 - divisor;
+    ch341_control_out(dev, CH341_REQ_WRITE_REG,
+      (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
+      (divisor_register_value << 8) | prescaler_register_value);
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
