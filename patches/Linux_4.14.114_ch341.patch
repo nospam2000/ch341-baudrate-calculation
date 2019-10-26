@@ -1,5 +1,5 @@
 diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index 578596d30..f9ec82bff 100644
+index 578596d30..f08b5090e 100644
 --- a/drivers/usb/serial/ch341.c
 +++ b/drivers/usb/serial/ch341.c
 @@ -54,8 +54,7 @@
@@ -16,8 +16,8 @@ index 578596d30..f9ec82bff 100644
  #define CH341_REQ_MODEM_CTRL   0xA4
  
  #define CH341_REG_BREAK        0x05
-+#define	CH341_REG_BPS_PRE      0x12
-+#define	CH341_REG_BPS_DIV      0x13
++#define CH341_REG_BPS_PRE      0x12
++#define CH341_REG_BPS_DIV      0x13
  #define CH341_REG_LCR          0x18
 +#define CH341_REG_LCR2         0x25
  #define CH341_NBREAK_BITS      0x01
