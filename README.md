@@ -1,4 +1,4 @@
-# ch341-baudrate-calculation
+# ch341-baudrate-calculation HOWTO
 How to calculate the baud rate of a CH341/CH340 usb serial adapter with a very small error rate
 
 There is no publicly available document which explains the details about the registers and the
@@ -9,8 +9,8 @@ OSX kernel because I really would like to use ESP8266 and ESP32 boards with a ba
 
 The contents of this project:
  - this documentation 
- - docs/ : a spreadsheet with calculations and measurements to prove that the used formulas are correct
- - patches/ : a Linux kernel patch to use the new formula to calculate the baudrate
+ - [docs](./docs/) : a spreadsheet with calculations and measurements to prove that the used formulas are correct
+ - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
 
 ## How is the baud rate calculated?
 
@@ -37,7 +37,7 @@ The base formular is very simply:
    The divider factors are: 2, 8 and 64
    By multiplying these factors in all possible combinations you get the 8 dividing factors
    mentioned above.
- - 'divisor' is a number which can be chosen from 4 to 256
+ - 'divisor' is a number which can be chosen from 4 to 256.
 
 ## How is the mapping between those variables and the registers of the CH341?
 
@@ -69,20 +69,46 @@ They might contain some more modes about when to notify the host about newly rec
 
 ### Divisor register 0x13 (Linux: CH341_REG_BPS_DIV, FreeBSD: UCHCOM_REG_BPS_DIV)
 
-The divisor must be between 1 and 256. That means you have to choose a prescaler value so
+The divisor must be between 4 and 256. That means you have to choose a prescaler value so
 that the divisor is within this range. The smaller the prescaler the larger and typical
 better the divisor to get a small baud rate error.
-The maximum officially supported baud rate is 2000000, but 3000000 also works. 
+
+The maximum officially supported baud rate is 2000000. A baud rate of 3000000 can also be
+set and at least sending data at this rate is possible, but the stop bit length is too long
+for baud rates >= 1000000, details see chapter below.
+
+Here the formula for the register values based on the `prescaler` and `divisor` values:
 
     #define CH341_CRYSTAL_FREQ (12000000UL)
     divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 1) / 2
     CH341_REG_BPS_DIV = 256 - divisor
 
-Why not just (CH341_CRYSTAL_FREQ / (prescaler * baud_rate))? Because we are using integer
+#### Divisor values < 8 ####
+
+The divisor register doesn't treat all values equally. The `divisor` values from 9 to 256 are
+just used normally, but the values between 8 and 2 give a divisor which is just half of its
+value (TODO: check for prescaler values!=1), for example using `divisor=8` only
+divides by 4.
+This is the reason for the following code:
+
+    // the divisors from 8 to 2 are actually 16 to 4
+    // this is needed for baud rates >=1500000
+    else if (div <= 8 && div >= 4) {
+        div /= 2;
+        found_div = true;
+        break;
+    }
+
+`divisor = 1` result in a actual divisor of 78 and is therefore not used.
+
+#### Rounding issues ####
+
+Why not just `(CH341_CRYSTAL_FREQ / (prescaler * baud_rate))`? Because we are using integer
 arithmetic and truncating values after the division leads to an error which only goes into
 the positive direction because the fractional part of divisor is lost.
 
-With floating point arithmetic you would do:
+With floating point arithmetic you would do 5/10 bankers rounding to spread the error equally
+between positive and negative range:
 
     divisor = TRUNC(CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 0.5)
 
@@ -90,7 +116,24 @@ which is equal to
 
     divisor = TRUNC((10 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 5) / 10)
 
-The formula above does the same but using dual system integer arithmetic.
+The first formula above does the same but using dual system integer arithmetic.
+
+#### Stop bit length too long for baud rates >= 1000000 ####
+The minimum stop bit time for transmitting is 2.00 µs which is correct for 500000.
+This means any baud rate above that has too long stop bits. For sending, this just
+reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
+with a correct stop bit time sends with full speed.
+
+Here the resulting number of stop bits for sending data
+ - <= 500000: 1 stop bits
+ - 1000000: 2 stop bits
+ - 2000000: 4 stop bits
+ - 3000000: 6 stop bits
+
+*****TODO: add oszi data from before 2019-10-27T09:20 for 3000000 with 2x0x55 sent *****
+*****TODO: add oszi data from 2019-10-27T09:21 for 2000000 with 4x0x55 sent *****
+*****TODO: add oszi data from 2019-10-27T09:27 for 1000000 with 2x0x55 sent *****
+*****TODO: add oszi data from 2019-10-27T09:21 for 500000 with 4x0x55 sent *****
 
 ## How to choose the prescaler value and write the calculation code
 
@@ -99,6 +142,8 @@ You can use this code which iterates through all eight prescalar values in this 
 
 When it finds a prescaler value which gives a divisor within the allowed range from 
 4 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
+In [./patches] you can find a patch which can directly applied to a Linux kernel and is
+updated more often than the code here.
 
     #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
@@ -235,9 +280,9 @@ So you can see that choosing the correct prescaler value and using correct round
    the baud rate 921600.
 
 ## Links
-- FreeBSD ch341 driver: https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c
-- Linux ch341 driver: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c
-- Linux kernel patch to improve accuracy from Jonathan Olds: https://patchwork.kernel.org/patch/10983017/
-- Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c): https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8
+- [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c) 
+- [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
+- [Linux kernel patch to improve accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
+- [Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
 
 
