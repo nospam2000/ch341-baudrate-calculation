@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+#include <stdlib.h>
 
 #define  EINVAL          22      /* Invalid argument */
 #define BIT(nr)                 (1UL << (nr))
@@ -17,6 +18,8 @@
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 
+typedef unsigned long uint32_t;
+//typedef long int32_t;
 typedef unsigned char u8;
 typedef unsigned short u16;
 typedef unsigned long u32;
@@ -125,6 +128,89 @@ static int ch341_control_out(struct usb_device *dev, u8 request,
 }
 
 
+static int ch341_set_baudrate_lcr_jon(struct usb_device *dev,
+				  struct ch341_private *priv, u8 lcr)
+{
+	short a;
+	int r;
+	unsigned long factor;
+	short divisor;
+
+	if (!priv->baud_rate)
+		return -EINVAL;
+	factor = (CH341_BAUDBASE_FACTOR / priv->baud_rate);
+	divisor = CH341_BAUDBASE_DIVMAX;
+
+	while ((factor > 0xfff0) && divisor) {
+		factor >>= 3;
+		divisor--;
+	}
+
+	if (factor > 0xfff0)
+		return -EINVAL;
+
+	factor = 0x10000 - factor;
+	a = (factor & 0xff00) | divisor;
+
+	/*
+	 * Calculate baud error using the 0,1,2,3 LSB and
+	 * also the error without the divisor (LSB==7).
+	 * Decide whether the divisor should be used.
+	 */
+	uint32_t msB = (a>>8) & 0xFF;
+	uint32_t lsB = a & 0xFF;
+	int32_t baud_wanted = priv->baud_rate;
+	uint32_t denom = ((1<<(10-3*lsB))*(256-msB));
+	/*
+	 * baud_wanted==(CH341_OSC_F/256) implies MSB==0 for no divisor
+	 * the 100 is for rounding.
+	 */
+	if (denom && ((baud_wanted+100) >= (((uint32_t)CH341_OSC_F)>>8))) {
+
+		/* Calculate error for divisor */
+		int32_t baud_expected = ((uint32_t)CH341_OSC_F) / denom;
+		uint32_t baud_error_difference = abs(baud_expected-baud_wanted);
+
+		/* Calculate a for no divisor */
+		uint32_t a_no_divisor = ((0x10000-(((uint32_t)CH341_OSC_F)<<8) /
+			baud_wanted+128) & 0xFF00) | 0x07;
+
+		/* a_no_divisor is only valid for MSB<248 */
+		if ((a_no_divisor>>8) < 248) {
+
+			/* Calculate error for no divisor */
+			int32_t baud_expected_no_divisor = ((uint32_t)CH341_OSC_F) /
+				(256-(a_no_divisor>>8));
+			uint32_t baud_error_difference_no_divisor =
+				abs(baud_expected_no_divisor-baud_wanted);
+
+			/*
+			 * If error using no divisor is less than using
+			 * a divisor then use it instead for the "a" word.
+			 */
+			if (baud_error_difference_no_divisor < baud_error_difference)
+				a = a_no_divisor;
+		}
+
+	}
+
+	/*
+	 * CH341A buffers data until a full endpoint-size packet (32 bytes)
+	 * has been received unless bit 7 is set.
+	 */
+	a |= BIT(7);
+
+	r = ch341_control_out(dev, CH341_REQ_WRITE_REG, 0x1312, a);
+	if (r)
+		return r;
+
+	r = ch341_control_out(dev, CH341_REQ_WRITE_REG, 0x2518, lcr);
+	if (r)
+		return r;
+
+	return r;
+}
+
 static int ch341_set_baudrate_lcr(struct usb_device *dev,
 				  struct ch341_private *priv, u8 lcr)
 {
@@ -165,6 +251,7 @@ static int ch341_set_baudrate_lcr(struct usb_device *dev,
 
 	return r;
 }
+
 
 static int ch341_set_baudrate_lcr_new(struct usb_device *dev,
 				  struct ch341_private *priv, u8 lcr)
@@ -397,11 +484,13 @@ void test_list()
 		unsigned long baud = baud_rates[i];
 		struct baud_compare bc1;
 		struct baud_compare bc2;
+		struct baud_compare bc3;
 		test_baud_rate(&bc1, baud, ch341_set_baudrate_lcr);
 		test_baud_rate(&bc2, baud, ch341_set_baudrate_lcr_new);
+		test_baud_rate(&bc3, baud, ch341_set_baudrate_lcr_jon);
 
-		printf("baud=%ld  \terrorOrig=%+.2lf\%  \terrorNew=%+.2lf\%  \tpre/divOrig=%ld/%ld  \tpre/divNew=%ld/%ld\n",
-			bc1.baud, bc1.baud_error, bc2.baud_error, bc1.pre, bc1.div, bc2.pre, bc2.div);
+		printf("baud=%ld  \terrorOrig=%+.2lf\%  \terrorNew=%+.2lf\%  \terrorJon=%+.2lf\%  \tpre/divOrig=%ld/%ld  \tpre/divNew=%ld/%ld  \tpre/divJon=%ld/%ld\n",
+			bc1.baud, bc1.baud_error, bc2.baud_error, bc3.baud_error, bc1.pre, bc1.div, bc2.pre, bc2.div, bc3.pre, bc3.div);
 #if 0
 			printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
 			      bc1.baud, bc1.real_baud, bc1.baud_error, bc1.pre_reg, bc1.div_reg, bc1.pre, bc1.div);
