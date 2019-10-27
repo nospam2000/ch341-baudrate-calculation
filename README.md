@@ -28,7 +28,7 @@ The base formular is very simply:
    The divider factors are: 2, 8 and 64
    By multiplying these factors in all possible combinations you get the 8 dividing factors
    mentioned above.
- - 'divisor' is a number which can be chosen from 1 to 256
+ - 'divisor' is a number which can be chosen from 4 to 256
 
 ## How is the mapping between those variables and the registers of the CH341?
 
