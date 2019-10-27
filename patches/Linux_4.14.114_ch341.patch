@@ -1,5 +1,5 @@
 diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index 578596d30..28b7620a5 100644
+index 578596d30..4e8f5190c 100644
 --- a/drivers/usb/serial/ch341.c
 +++ b/drivers/usb/serial/ch341.c
 @@ -54,8 +54,7 @@
@@ -45,7 +45,7 @@ index 578596d30..28b7620a5 100644
  static void ch341_set_termios(struct tty_struct *tty,
  			      struct usb_serial_port *port,
  			      struct ktermios *old_termios);
-@@ -150,38 +167,62 @@ static int ch341_control_in(struct usb_device *dev,
+@@ -150,38 +167,59 @@ static int ch341_control_in(struct usb_device *dev,
  static int ch341_set_baudrate_lcr(struct usb_device *dev,
  				  struct ch341_private *priv, u8 lcr)
  {
@@ -85,12 +85,9 @@ index 578596d30..28b7620a5 100644
 +		div = ((2UL * CH341_OSC_F)
 +			/ (prescaler * priv->baud_rate) + 1UL) / 2UL;
 +		// when prescaler==1 the divisors from 8 to 2 are
-+		// actually 16 to 4
-+		// this is needed for baud rates >=1500000
-+		if (prescaler == 1 && div <= 8 && div >= 4) {
-+			div /= 2;
-+			found_div = 1;
-+			break;
++		// actually 16 to 4, skip them
++		if (prescaler == 1 && div <= 8) {
++			continue;
 +		} else if (div <= 256 && div >= 2) {
 +			found_div = 1;
 +			break;

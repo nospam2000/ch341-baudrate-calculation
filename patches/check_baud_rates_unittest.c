@@ -196,12 +196,9 @@ static int ch341_set_baudrate_lcr_new(struct usb_device *dev,
 		div = ((2UL * CH341_OSC_F)
 			/ (prescaler * priv->baud_rate) + 1UL) / 2UL;
 		// when prescaler==1 the divisors from 8 to 2 are
-		// actually 16 to 4
-		// this is needed for baud rates >=1500000
-		if (prescaler == 1 && div <= 8 && div >= 4) {
-			div /= 2;
-			found_div = 1;
-			break;
+		// actually 16 to 4, skip them
+		if (prescaler == 1 && div <= 8) {
+			continue;
 		} else if (div <= 256 && div >= 2) {
 			found_div = 1;
 			break;
@@ -403,6 +400,18 @@ void test_list()
 		test_baud_rate(&bc1, baud, ch341_set_baudrate_lcr);
 		test_baud_rate(&bc2, baud, ch341_set_baudrate_lcr_new);
 
+		printf("baud=%ld  \terrorOrig=%+.2lf\%  \terrorNew=%+.2lf\%  \tpre/divOrig=%ld/%ld  \tpre/divNew=%ld/%ld\n",
+			bc1.baud, bc1.baud_error, bc2.baud_error, bc1.pre, bc1.div, bc2.pre, bc2.div);
+#if 0
+			printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
+			      bc1.baud, bc1.real_baud, bc1.baud_error, bc1.pre_reg, bc1.div_reg, bc1.pre, bc1.div);
+			printf("N: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
+			      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
+#endif
+
+
+#if 0
+
 		if(fabs(fabs(bc1.baud_error) - fabs(bc2.baud_error)) > 0.01) // ignore floating point errors
 		{
 			if(fabs(bc1.baud_error) < fabs(bc2.baud_error))
@@ -437,6 +446,7 @@ void test_list()
 			      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
 #endif
 		}
+#endif
 	}
 
 	printf("newBetter:%ld, origBetter:%ld, badCounter:%ld\n", newBetter, origBetter, badCounter);
