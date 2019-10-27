@@ -254,27 +254,29 @@ call and one USB request.
       (divisor_register_value << 8) | prescaler_register_value);
 
 ## How to calculate the error
+Because of rounding you always have an error when `12000000 / wanted baud rate` is not a natural number.
 To calculate the real baud rate and the error, you have to use the calculated register values and do
-the calculation with the formula ***baud rate = 12000000 / prescaler / divisor***
-Because of rounding you always have an error.
+the calculation with the formula ***resulting baud rate = 12000000 / prescaler / divisor*** 
+
+The error formula: `error (in percent) = ((resulting baud rate / wanted baud rate) - 1) * 100`
 
 For example the source from above gives the value `prescaler=1` and `divider=13` for the requested 
 baud rate of 921600 (complete divisor=13):
 
-    real baud rate = 12000000 / 1 / 13 = 923076.92 baud
+    resulting baud rate = 12000000 / 1 / 13 = 923076.92 baud
     baud rate error = (923076.92 / 921600 - 1) * 100% = 0.16%
 
 With `prescaler=2` and `divider=7` for 921600 baud (complete divisor=14 instead of 13):
 
-    real baud rate = 12000000 / 2 / 7 = 857142.86 baud
+    resulting baud rate = 12000000 / 2 / 7 = 857142.86 baud
     baud rate error = (857142.86 / 921600 - 1) * 100% = -6.99%
 
 With `prescaler=2` and `divider=6` for 921600 baud (complete divisor=12 instead of 13):
 
-    real baud rate = 12000000 / 2 / 6 = 1000000.00 baud
+    resulting baud rate = 12000000 / 2 / 6 = 1000000.00 baud
     baud rate error = (1000000.00 / 921600 - 1) * 100% = 8.51%
 
-So you can see that choosing the correct prescaler value and using correct rounding is essential to get a small error.
+So you can see that choosing the correct prescaler value and using correct rounding is essential to get a smaller error.
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
