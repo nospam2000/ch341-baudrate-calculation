@@ -15,10 +15,14 @@ The contents of this project:
 ## How is the baud rate calculated?
 
 It took me a while to figure it out, because all drivers are using magic constants like
-1532620800 which are not clear and none of the source code I have seen does it completely right.
+1532620800 which are not clear and none of the source code I have seen does it completely right,
+although the FreeBSD driver is pretty close but is missing support for the very high baud rates.
+
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium baud rates like 38400, but almost all of
-them fail at higher baud rates like 921600 or 2000000 and at unusual baud rates like 256000.
+them fail at higher baud rates like 921600 and at unusual baud rates like 256000. I didn't find one
+which supports 1500000, 2000000 and 3000000 baud, but you can use these rates with the information
+you can find here.
 
 The base formular is very simply:
 
