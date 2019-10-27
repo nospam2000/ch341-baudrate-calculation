@@ -222,6 +222,8 @@ So you can see that choosing the correct prescaler value and using correct round
  - the authors of the FreeBSD ch341 driver for giving some more insights. If you read this,
    please tell me the meaning of UCHCOM_REG_BPS_MOD
  - the authors of the Linux ch341 driver for providing the driver I need
+ - Apple for providing a ch341 driver (although sometimes it hangs and killing the process
+   which uses the port or just pulling the USB cable causes the computer to crash)
 
 ## Links
 - FreeBSD ch341 driver: https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c
