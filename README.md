@@ -8,8 +8,10 @@ This project is meant as a reference for drivers like the Linux and FreeBSD kern
 OSX kernel because I really would like to use ESP8266 and ESP32 boards with a baud rate of 921600.
 
 The contents of this project:
- - this documentation 
- - [docs](./docs/) : a spreadsheet with calculations and measurements to prove that the used formulas are correct
+ - this README.md which describes how to calculate the baud rate and the limits.
+ - [docs](./docs/) : a spreadsheet with calculations and measurements to prove that the used
+   formulas are correct. It also contains the error calculation. Baud rates not contained can
+   easily be added to see their error value.
  - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
  - [measurements](./measurements/) : measurements of transmissions with some baud rates.
    The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted
@@ -77,7 +79,7 @@ better the divisor to get a small baud rate error.
 
 The maximum officially supported baud rate is 2000000. A baud rate of 3000000 can also be
 set and at least sending data at this rate is possible, but the stop bit length is too long
-for baud rates >= 1000000, details see chapter below.
+for baud rates >= 1000000, details see chapter below. The smallest possible baud rate is 46.
 
 Here the formula for the register values based on the `prescaler` and `divisor` values:
 
