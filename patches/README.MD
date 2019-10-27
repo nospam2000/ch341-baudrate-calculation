@@ -1,5 +1,5 @@
 # Contents
-This directory contains a patch to improve the baud rate accuracy of the CH341 Linux driver.
+This directory contains [a patch](./Linux_4.14.114_ch341.patch) to improve the baud rate accuracy of the CH341 Linux driver.
 There is also a [unit test](./check_baud_rates_unittest.c) which checks the baud rate error
 and compares the result of the original code and the new algorithm.
 
