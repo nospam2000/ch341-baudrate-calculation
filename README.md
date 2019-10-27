@@ -127,16 +127,16 @@ reduces the throughput (bytes/s) but I haven't tested if data is lost when a sen
 with a correct stop bit time sends with full speed.
 
 ##### Here the resulting number of stop bits for sending data #####
-###### <= 500000: 1 stop bits ######
+###### <= 500000 baud: 1 stop bits ######
 ![scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP)
 
-###### 1000000: 2 stop bits ######
+###### 1000000 baud: 2 stop bits ######
 ![scope picture](./measurements/1000000_baud_0x55_0x55/F0009TEK.BMP)
 
-###### 2000000: 4 stop bits ######
+###### 2000000 baud: 4 stop bits ######
 ![scope picture](./measurements/2000000_baud_0x55_0x55_0x55_0x55/F0008TEK.BMP)
 
-###### 3000000: 6 stop bits ######
+###### 3000000 baud: 6 stop bits ######
 ![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
 
 ## How to choose the prescaler value and write the calculation code
