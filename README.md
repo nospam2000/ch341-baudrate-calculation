@@ -11,6 +11,8 @@ The contents of this project:
  - this documentation 
  - [docs](./docs/) : a spreadsheet with calculations and measurements to prove that the used formulas are correct
  - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
+ - [measurements](./measurements/) : measurements of transmissions with some baud rates.
+   The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted
 
 ## How is the baud rate calculated?
 
@@ -119,21 +121,16 @@ which is equal to
 The first formula above does the same but using dual system integer arithmetic.
 
 #### Stop bit length too long for baud rates >= 1000000 ####
-The minimum stop bit time for transmitting is 2.00 µs which is correct for 500000.
+The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP)) which is correct for 500000.
 This means any baud rate above that has too long stop bits. For sending, this just
 reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
 with a correct stop bit time sends with full speed.
 
 Here the resulting number of stop bits for sending data
- - <= 500000: 1 stop bits
- - 1000000: 2 stop bits
- - 2000000: 4 stop bits
- - 3000000: 6 stop bits
-
-*****TODO: add oszi data from before 2019-10-27T09:20 for 3000000 with 2x0x55 sent *****
-*****TODO: add oszi data from 2019-10-27T09:21 for 2000000 with 4x0x55 sent *****
-*****TODO: add oszi data from 2019-10-27T09:27 for 1000000 with 2x0x55 sent *****
-*****TODO: add oszi data from 2019-10-27T09:21 for 500000 with 4x0x55 sent *****
+ - <= 500000: 1 stop bits ([scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP))
+ - 1000000: 2 stop bits ([scope picture](./measurements/1000000_baud_0x55_0x55/F0009TEK.BMP))
+ - 2000000: 4 stop bits ([scope picture](./measurements/2000000_baud_0x55_0x55_0x55_0x55/F0008TEK.BMP))
+ - 3000000: 6 stop bits ([scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP))
 
 ## How to choose the prescaler value and write the calculation code
 
