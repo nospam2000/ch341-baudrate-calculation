@@ -7,6 +7,11 @@ hardware of the CH341/CH340 usb serial adapter chips from WinChipHead (WCN).
 This project is meant as a reference for drivers like the Linux and FreeBSD kernel or the Mac
 OSX kernel because I really would like to use ESP8266 and ESP32 boards with a baud rate of 921600.
 
+The contents of this project:
+ - this documentation 
+ - docs/ : a spreadsheet with calculations and measurements to prove that the used formulas are correct
+ - patches/ : a Linux kernel patch to use the new formula to calculate the baudrate
+
 ## How is the baud rate calculated?
 
 It took me a while to figure it out, because all drivers are using magic constants like
@@ -222,8 +227,8 @@ So you can see that choosing the correct prescaler value and using correct round
  - the authors of the FreeBSD ch341 driver for giving some more insights. If you read this,
    please tell me the meaning of UCHCOM_REG_BPS_MOD
  - the authors of the Linux ch341 driver for providing the driver I need
- - Apple for providing a ch341 driver (although sometimes it hangs and killing the process
-   which uses the port or just pulling the USB cable causes the computer to crash)
+ - Apple for providing a ch341 driver. I would be happy if you could use my work to fix
+   the baud rate 921600.
 
 ## Links
 - FreeBSD ch341 driver: https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c
