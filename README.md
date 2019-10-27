@@ -28,7 +28,7 @@ The base formular is very simply:
    The divider factors are: 2, 8 and 64
    By multiplying these factors in all possible combinations you get the 8 dividing factors
    mentioned above.
- - 'divisor' is a number which can be chosen from 1 to 256
+ - 'divisor' is a number which can be chosen from 4 to 256
 
 ## How is the mapping between those variables and the registers of the CH341?
 
@@ -63,7 +63,7 @@ They might contain some more modes about when to notify the host about newly rec
 The divisor must be between 1 and 256. That means you have to choose a prescaler value so
 that the divisor is within this range. The smaller the prescaler the larger and typical
 better the divisor to get a small baud rate error.
-The maximum supported baud rate is 2000000. 
+The maximum officially supported baud rate is 2000000, but 3000000 also works. 
 
     #define CH341_CRYSTAL_FREQ (12000000UL)
     divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 1) / 2
