@@ -7,13 +7,22 @@ hardware of the CH341/CH340 usb serial adapter chips from WinChipHead (WCN).
 This project is meant as a reference for drivers like the Linux and FreeBSD kernel or the Mac
 OSX kernel because I really would like to use ESP8266 and ESP32 boards with a baud rate of 921600.
 
+The contents of this project:
+ - this documentation 
+ - docs/ : a spreadsheet with calculations and measurements to prove that the used formulas are correct
+ - patches/ : a Linux kernel patch to use the new formula to calculate the baudrate
+
 ## How is the baud rate calculated?
 
 It took me a while to figure it out, because all drivers are using magic constants like
-1532620800 which are not clear and none of the source code I have seen does it completely right.
+1532620800 which are not clear and none of the source code I have seen does it completely right,
+although the FreeBSD driver is pretty close but is missing support for the very high baud rates.
+
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium baud rates like 38400, but almost all of
-them fail at higher baud rates like 921600 or 2000000 and at unusual baud rates like 256000.
+them fail at higher baud rates like 921600 and at unusual baud rates like 256000. I didn't find one
+which supports 1500000, 2000000 and 3000000 baud, but you can use these rates with the information
+you can find here.
 
 The base formular is very simply:
 
@@ -222,6 +231,8 @@ So you can see that choosing the correct prescaler value and using correct round
  - the authors of the FreeBSD ch341 driver for giving some more insights. If you read this,
    please tell me the meaning of UCHCOM_REG_BPS_MOD
  - the authors of the Linux ch341 driver for providing the driver I need
+ - Apple for providing a ch341 driver. I would be happy if you could use my work to fix
+   the baud rate 921600.
 
 ## Links
 - FreeBSD ch341 driver: https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c
