@@ -11,7 +11,8 @@ The script [build.sh](./build.sh) is used by me to build and load the patched ke
 ## Testing common baud rates
 
 For the following common baud rates my new function gives a better result than the original code.
-Specifically the common baud rates 921600 and 307200 have a large error with the original code.
+Specifically the common baud rate 921600 has a high error and also the not so common baud 
+rates 256000, 307200, 1090909 and 1333333 have a large error with the original code.
 
 The columns have the following meaning:
  - `baus` means the requested baud rate
