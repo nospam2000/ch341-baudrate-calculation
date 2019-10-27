@@ -1,4 +1,4 @@
-# ch341-baudrate-calculation
+# ch341-baudrate-calculation HOWTO
 How to calculate the baud rate of a CH341/CH340 usb serial adapter with a very small error rate
 
 There is no publicly available document which explains the details about the registers and the
@@ -9,8 +9,8 @@ OSX kernel because I really would like to use ESP8266 and ESP32 boards with a ba
 
 The contents of this project:
  - this documentation 
- - docs/ : a spreadsheet with calculations and measurements to prove that the used formulas are correct
- - patches/ : a Linux kernel patch to use the new formula to calculate the baudrate
+ - [docs](./docs/) : a spreadsheet with calculations and measurements to prove that the used formulas are correct
+ - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
 
 ## How is the baud rate calculated?
 
@@ -280,9 +280,9 @@ So you can see that choosing the correct prescaler value and using correct round
    the baud rate 921600.
 
 ## Links
-- [https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c](FreeBSD ch341 driver) 
-- [https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c Linux ch341 driver]
-- Linux kernel patch to improve accuracy from Jonathan Olds: https://patchwork.kernel.org/patch/10983017/
-- Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c): https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8
+- [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c) 
+- [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
+- [Linux kernel patch to improve accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
+- [Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
 
 
