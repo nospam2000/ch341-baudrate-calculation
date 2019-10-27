@@ -256,38 +256,35 @@ static int ch341_set_baudrate_lcr(struct usb_device *dev,
 static int ch341_set_baudrate_lcr_new(struct usb_device *dev,
 				  struct ch341_private *priv, u8 lcr)
 {
-	unsigned long div;
-	short prescaler_index;
-	u8 div_regvalue;
-	unsigned long prescaler;
-	short prescaler_regvalue;
 	int found_div;
+	u8 div_regvalue;
+	u8 prescaler_regvalue;
+	short prescaler_index;
 	int r;
 
 	if (priv->baud_rate < 46 || priv->baud_rate > 3030000)
 		return -EINVAL;
 
-	/*
-	 * CH341A has 3 chained prescalers
-	 * bit 0: disable prescaler factor *8
-	 * bit 1: disable prescaler factor *64
-	 * bit 2: disable prescaler factor *2
-	 */
 	found_div = 0;
-	prescaler_index = 8; // illegal value, just to suppress compiler warning
 	// start with the smallest possible prescaler value to get the
 	// best precision at first match (largest mantissa value)
 	for (prescaler_index = 0; prescaler_index < ARRAY_SIZE(scaler_tab);
 			++prescaler_index) {
+		unsigned long prescaler;
+		unsigned long div;
+
 		prescaler = scaler_tab[prescaler_index].prescaler_div;
 		div = ((2UL * CH341_OSC_F)
 			/ (prescaler * priv->baud_rate) + 1UL) / 2UL;
 		// when prescaler==1 the divisors from 8 to 2 are
-		// actually 16 to 4, skip them
+		// actually 16 to 4; skip them, use next prescaler
 		if (prescaler == 1 && div <= 8) {
 			continue;
 		} else if (div <= 256 && div >= 2) {
 			found_div = 1;
+			prescaler_regvalue =
+				scaler_tab[prescaler_index].reg_value | BIT(7);
+			div_regvalue = 256 - div;
 			break;
 		}
 	}
@@ -299,11 +296,9 @@ static int ch341_set_baudrate_lcr_new(struct usb_device *dev,
 	 * CH341A buffers data until a full endpoint-size packet (32 bytes)
 	 * has been received unless bit 7 is set.
 	 */
-	prescaler_regvalue = scaler_tab[prescaler_index].reg_value | BIT(7);
-	div_regvalue = 256 - div;
 	r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
-		(CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-		(div_regvalue << 8) | prescaler_regvalue);
+		(CH341_REG_BPS_DIV << 8) | CH341_REG_BPS_PRE,
+		(div_regvalue      << 8) | prescaler_regvalue);
 	if (r)
 		return r;
 
@@ -385,13 +380,16 @@ void test_range(unsigned long start, unsigned long end)
 {
 	unsigned long newBetter = 0;
 	unsigned long origBetter = 0;
+	unsigned long jonBetter = 0;
 	unsigned long badCounter = 0;
 
 	for(unsigned long baud = start; baud < end; baud++) {
 		struct baud_compare bc1;
 		struct baud_compare bc2;
+		struct baud_compare bc3;
 		test_baud_rate(&bc1, baud, ch341_set_baudrate_lcr);
 		test_baud_rate(&bc2, baud, ch341_set_baudrate_lcr_new);
+		test_baud_rate(&bc3, baud, ch341_set_baudrate_lcr_jon);
 
 		// for the range 46 to 100000: newBetter:44653, origBetter:0, badCounter:0
 		// for the range 46 to 3000000
@@ -407,7 +405,17 @@ void test_range(unsigned long start, unsigned long end)
 				      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
 #endif
 			}
-			else if(fabs(bc1.baud_error) > fabs(bc2.baud_error))
+			else if(fabs(bc3.baud_error) < fabs(bc2.baud_error))
+			{
+				jonBetter++;
+#if 0
+				printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
+				      bc1.baud, bc1.real_baud, bc1.baud_error, bc1.pre_reg, bc1.div_reg, bc1.pre, bc1.div);
+				printf("N: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
+				      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
+#endif
+			}
+			else if(fabs(bc1.baud_error) > fabs(bc2.baud_error) && fabs(bc3.baud_error) > fabs(bc2.baud_error))
 			{
 				newBetter++;
 			}
@@ -425,7 +433,7 @@ void test_range(unsigned long start, unsigned long end)
 		}
 	}
 
-	printf("newBetter:%ld, origBetter:%ld, badCounter:%ld\n", newBetter, origBetter, badCounter);
+	printf("newBetter:%ld, origBetter:%ld, jonBetter:%ld, badCounter:%ld\n", newBetter, origBetter, jonBetter, badCounter);
 }
 
 void test_list()
@@ -435,49 +443,10 @@ void test_list()
 	unsigned long badCounter = 0;
 
 	unsigned long baud_rates[] = {
-		46,
-		50,
-		75,
-		110,
-		135,
-		150,
-		300,
-		600,
-		1200,
-		1800,
-		2400,
-		4800,
-		7200,
-		9600,
-		14400,
-		19200,
-		31250,
-		38400,
-		45450,
-		56000,
-		57600,
-		76800,
-		100000,
-		115200,
-		128000,
-		153846,
-		187500,
-		230400,
-		250000,
-		256000,
-		307200,
-		460800,
-		500000,
-		750000,
-		857143,
-		921600,
-		1000000,
-		1090909,
-		1200000,
-		1333333,
-		1500000,
-		2000000,
-		3000000,
+		46, 50, 75, 110, 135, 150, 300, 600, 1200, 1800, 2400, 4800, 7200, 9600, 14400, 19200,
+		31250, 38400, 45450, 56000, 57600, 76800, 100000, 115200, 128000, 153846, 187500,
+		230400, 250000, 256000, 307200, 460800, 500000, 750000, 857143, 921600, 1000000,
+		1090909, 1200000, 1333333, 1500000, 2000000, 3000000,
 	};
 
 	for(unsigned long i = 0; i < ARRAY_SIZE(baud_rates); i++) {
@@ -489,7 +458,7 @@ void test_list()
 		test_baud_rate(&bc2, baud, ch341_set_baudrate_lcr_new);
 		test_baud_rate(&bc3, baud, ch341_set_baudrate_lcr_jon);
 
-		printf("baud=%ld  \terrorOrig=%+.2lf\%  \terrorNew=%+.2lf\%  \terrorJon=%+.2lf\%  \tpre/divOrig=%ld/%ld  \tpre/divNew=%ld/%ld  \tpre/divJon=%ld/%ld\n",
+		printf("baud=%ld  \terrorOrig=%+.2lf\%  \terrorNew=%+.2lf\%  \terrorJon=%+.2lf\%  \tpre*divOrig=%ld*%ld  \tpre*divNew=%ld*%ld  \tpre*divJon=%ld*%ld\n",
 			bc1.baud, bc1.baud_error, bc2.baud_error, bc3.baud_error, bc1.pre, bc1.div, bc2.pre, bc2.div, bc3.pre, bc3.div);
 #if 0
 			printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
@@ -538,7 +507,7 @@ void test_list()
 #endif
 	}
 
-	printf("newBetter:%ld, origBetter:%ld, badCounter:%ld\n", newBetter, origBetter, badCounter);
+	//printf("newBetter:%ld, origBetter:%ld, badCounter:%ld\n", newBetter, origBetter, badCounter);
 }
 
 int main(int argc, char**argv)
