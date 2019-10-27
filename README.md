@@ -89,23 +89,37 @@ You can use this code which iterates through all eight prescalar values in this 
   1, 2, 8, 16, 64, 128, 512, 1024
 
 When it finds a prescaler value which gives a divisor within the allowed range from 
-1 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
+4 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
 
-*****TODO: the code needs more testing, especially for prescaler_index >1 *****
-
-    #define CH341_CRYSTAL_FREQ    (12000000UL)
+    #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
     #define CH341_REG_BPS_DIV      0x13
     #define CH341_REG_LCR          0x18
     #define CH341_REG_LCR2         0x25
+        struct ch341_prescalers {
+            u8 reg_value;
+            u32 prescaler_divisor;
+    };
+    static const struct ch341_prescalers prescaler_table[] = {
+            { 7, 1 },
+            { 3, 2 },
+            { 6, 8 },
+            { 2, 16 },
+            { 5, 64 },
+            { 1, 128 },
+            { 4, 512 },
+            { 0, 1024 }
+    };
+    #define PRESCALER_TABLE_SIZE (sizeof(prescaler_table) / sizeof(prescaler_table[0]))
+    
     static int ch341_set_baudrate_lcr(struct usb_device *dev,
                                       struct ch341_private *priv, u8 lcr)
     {
             unsigned long divisor;
             short prescaler_index;
-            u8 divisor_register_value;
+            u8 divisor_regvalue;
             unsigned long prescaler;
-            short prescaler_register_value;
+            short prescaler_regvalue; 
             bool foundDivisor;
             int r;
     
@@ -113,27 +127,26 @@ When it finds a prescaler value which gives a divisor within the allowed range f
                     return -EINVAL;
     
             /*
-             * CH341A has 3 prescalers which can be cascaded (multiplied with each other):
+             * CH341A has 3 chained prescalers
              * bit 0: disable prescaler factor *8
              * bit 1: disable prescaler factor *64
              * bit 2: disable prescaler factor *2
              */
             foundDivisor = false;
             prescaler_index = 8; // illegal value, just to suppress compiler warning
-            // start with the smallest possible prescaler value to get the best precision
-            // at first match (largest mantissa value)
-            for(prescaler_index = 7; prescaler_index >= 0; --prescaler_index) {
-                    prescaler = ((prescaler_index & BIT(2)) ? 1 : 2)
-                            * ((prescaler_index & BIT(1)) ? 1 : 64)
-                            * ((prescaler_index & BIT(0)) ? 1 : 8);
-                    divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * priv->baud_rate) + 1) / 2;
-                    if ((divisor <= 256) && (divisor >= 9)) {
+            // start with the smallest possible prescaler value to get the
+            // best precision at first match (largest mantissa value)
+            for (prescaler_index = 0; prescaler_index <= PRESCALER_TABLE_SIZE;
+                            ++prescaler_index) {
+                    prescaler = prescaler_table[prescaler_index].prescaler_divisor;
+                    divisor = (2 * CH341_OSC_FREQ / (prescaler * priv->baud_rate) + 1) / 2;
+                    if (divisor <= 256 && divisor >= 9) {
                             foundDivisor = true;
                             break;
                     }
                     // the divisors from 8 to 2 are actually 16 to 4
                     // this is needed for baud rates >=1500000
-                    else if ((divisor <= 8) && (divisor >= 4)) {
+                    else if (divisor <= 8 && divisor >= 4) {
                             divisor /= 2;
                             foundDivisor = true;
                             break;
@@ -147,27 +160,25 @@ When it finds a prescaler value which gives a divisor within the allowed range f
              * CH341A buffers data until a full endpoint-size packet (32 bytes)
              * has been received unless bit 7 is set.
              */
-            prescaler_register_value = ((prescaler_index >> 1) & (BIT(0) | BIT(1)))
-                    | ((prescaler_index << 2) & BIT(2))
-                    | BIT(7);
-            divisor_register_value = 256 - divisor;
-            printk("ch341.c: baud_rate %u, prescaler %lu, prescaler_register_value 0x%x,"
-                    " divisor %lu, divisor_register_value 0x%x, foundDivisor %d\n",
-                    priv->baud_rate, prescaler, prescaler_register_value, divisor,
-                    divisor_register_value, foundDivisor);
+            prescaler_regvalue = prescaler_table[prescaler_index].reg_value | BIT(7);
+            divisor_regvalue = 256 - divisor;
+            printk("ch341.c: baud_rate %u, prescaler %lu, prescaler_regvalue 0x%x,"
+                    " divisor %lu, divisor_regvalue 0x%x, foundDivisor %d\n",
+                    priv->baud_rate, prescaler, prescaler_regvalue, divisor,
+                    divisor_regvalue, foundDivisor);
             r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
                     (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-                    (divisor_register_value << 8) | prescaler_register_value);
+                    (divisor_regvalue << 8) | prescaler_regvalue);
             if (r)
                     return r;
     
-            r = ch341_control_out(dev, CH341_REQ_WRITE_REG, (CH341_REG_LCR2 << 8) | CH341_REG_LCR, lcr);
+            r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
+                    (CH341_REG_LCR2 << 8) | CH341_REG_LCR, lcr);
             if (r)
                     return r;
     
             return r;
     }
-
 
 ## How to set the registers?
 
