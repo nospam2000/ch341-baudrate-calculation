@@ -123,7 +123,7 @@ which is equal to
 The first formula above does the same but using dual system integer arithmetic.
 
 #### Stop bit length too long for baud rates >= 1000000 ####
-The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP)) which is correct for 500000.
+The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP?raw=true)) which is correct for 500000.
 This means any baud rate above that has too long stop bits. For sending, this just
 reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
 with a correct stop bit time sends with full speed.
