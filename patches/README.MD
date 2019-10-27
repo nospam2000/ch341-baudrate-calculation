@@ -10,7 +10,7 @@ and compares the result of the original code and the new algorithm.
 
 *For the following common baud rates my new function gives a better result than the original code.
 'O' means 'original' and 'N' means 'new':*
-    ```O: baud=110     real_baud=109.521       error=-0.44%    pre_reg=0x80    div_reg=0x95    pre=1024        div=107
+```    O: baud=110     real_baud=109.521       error=-0.44%    pre_reg=0x80    div_reg=0x95    pre=1024        div=107
     N: baud=110     real_baud=110.035       error=+0.03%    pre_reg=0x84    div_reg=0x2b    pre=512 div=213
     O: baud=256000  real_baud=250000.000    error=-2.34%    pre_reg=0x83    div_reg=0xe8    pre=2   div=24
     N: baud=256000  real_baud=255319.149    error=-0.27%    pre_reg=0x87    div_reg=0xd1    pre=1   div=47
@@ -23,6 +23,7 @@ and compares the result of the original code and the new algorithm.
     O: baud=1333333 real_baud=1200000.000   error=-10.00%   pre_reg=0x83    div_reg=0xfb    pre=2   div=5
     N: baud=1333333 real_baud=1333333.333   error=+0.00%    pre_reg=0x87    div_reg=0xf7    pre=1   div=9
 ```
+
 
 Specifically the baud rates 921600 and 307200 have a large error with the original code.
 
