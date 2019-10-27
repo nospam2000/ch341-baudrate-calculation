@@ -142,6 +142,8 @@ You can use this code which iterates through all eight prescalar values in this 
 
 When it finds a prescaler value which gives a divisor within the allowed range from 
 4 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
+In [./patches] you can find a patch which can directly applied to a Linux kernel and is
+updated more often than the code here.
 
     #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
@@ -278,8 +280,8 @@ So you can see that choosing the correct prescaler value and using correct round
    the baud rate 921600.
 
 ## Links
-- FreeBSD ch341 driver: https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c
-- Linux ch341 driver: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c
+- [https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c](FreeBSD ch341 driver) 
+- [https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c Linux ch341 driver]
 - Linux kernel patch to improve accuracy from Jonathan Olds: https://patchwork.kernel.org/patch/10983017/
 - Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c): https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8
 
