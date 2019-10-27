@@ -10,8 +10,12 @@ The script [build.sh](./build.sh) is used by me to build and load the patched ke
 
 ## Testing common baud rates
 
-*For the following common baud rates my new function gives a better result than the original code.
-'O' means 'original' and 'N' means 'new':*
+For the following common baud rates my new function gives a better result than the original code. Please look the `error` column.
+
+The lines have the following meaning:
+ - 'O' means 'original code'
+ - 'N' means 'new code from me':
+ 
 ```
 O: baud=110     real_baud=109.521       error=-0.44%    pre_reg=0x80    div_reg=0x95    pre=1024 div=107
 N: baud=110     real_baud=110.035       error=+0.03%    pre_reg=0x84    div_reg=0x2b    pre=512 div=213
