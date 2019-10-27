@@ -4,6 +4,7 @@ This directory contains [a Linux kernel driver patch](./Linux_4.14.114_ch341.pat
 There is also a [unit test](./check_baud_rates_unittest.c) which checks the baud rate error
 and compares the result of the original code and the new algorithm.
 
+The [script build.sh](./build.sh) is used by me to build and load the patched kernel modulu without building the whole kernel.
 
 # Result of the unit test
 
