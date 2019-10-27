@@ -1,5 +1,5 @@
 diff --git a/drivers/usb/serial/ch341.c b/drivers/usb/serial/ch341.c
-index 578596d30..81ce02dbd 100644
+index 578596d30..28b7620a5 100644
 --- a/drivers/usb/serial/ch341.c
 +++ b/drivers/usb/serial/ch341.c
 @@ -54,8 +54,7 @@
@@ -45,7 +45,7 @@ index 578596d30..81ce02dbd 100644
  static void ch341_set_termios(struct tty_struct *tty,
  			      struct usb_serial_port *port,
  			      struct ktermios *old_termios);
-@@ -150,38 +167,61 @@ static int ch341_control_in(struct usb_device *dev,
+@@ -150,38 +167,62 @@ static int ch341_control_in(struct usb_device *dev,
  static int ch341_set_baudrate_lcr(struct usb_device *dev,
  				  struct ch341_private *priv, u8 lcr)
  {
@@ -55,7 +55,7 @@ index 578596d30..81ce02dbd 100644
 +	u8 div_regvalue;
 +	unsigned long prescaler;
 +	short prescaler_regvalue;
-+	bool found_div;
++	int found_div;
  	int r;
 -	unsigned long factor;
 -	short divisor;
@@ -75,23 +75,24 @@ index 578596d30..81ce02dbd 100644
 +	 * bit 1: disable prescaler factor *64
 +	 * bit 2: disable prescaler factor *2
 +	 */
-+	found_div = false;
++	found_div = 0;
 +	prescaler_index = 8; // illegal value, just to suppress compiler warning
 +	// start with the smallest possible prescaler value to get the
 +	// best precision at first match (largest mantissa value)
-+	for (prescaler_index = 0; prescaler_index <= ARRAY_SIZE(scaler_tab);
++	for (prescaler_index = 0; prescaler_index < ARRAY_SIZE(scaler_tab);
 +			++prescaler_index) {
 +		prescaler = scaler_tab[prescaler_index].prescaler_div;
-+		div = (2 * CH341_OSC_F / (prescaler * priv->baud_rate) + 1) / 2;
-+		if (div <= 256 && div >= 9) {
-+			found_div = true;
-+			break;
-+		}
-+		// the divisors from 8 to 2 are actually 16 to 4
++		div = ((2UL * CH341_OSC_F)
++			/ (prescaler * priv->baud_rate) + 1UL) / 2UL;
++		// when prescaler==1 the divisors from 8 to 2 are
++		// actually 16 to 4
 +		// this is needed for baud rates >=1500000
-+		else if (div <= 8 && div >= 4) {
++		if (prescaler == 1 && div <= 8 && div >= 4) {
 +			div /= 2;
-+			found_div = true;
++			found_div = 1;
++			break;
++		} else if (div <= 256 && div >= 2) {
++			found_div = 1;
 +			break;
 +		}
  	}
