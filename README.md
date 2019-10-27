@@ -201,18 +201,15 @@ updated more often than the code here.
                 prescaler = scaler_tab[prescaler_index].prescaler_div;
                 div = ((2UL * CH341_OSC_F)
                         / (prescaler * priv->baud_rate) + 1UL) / 2UL;
+
                 // when prescaler==1 the divisors from 8 to 2 are
-                // actually 16 to 4
-                // this is needed for baud rates >=1500000
-                if (prescaler == 1 && div <= 8 && div >= 4) {
-                        div /= 2;
-                        found_div = 1;
-                        break;
+                // actually 16 to 4, skip them
+                if (prescaler == 1 && div <= 8) {
+                        continue;
                 } else if (div <= 256 && div >= 2) {
                         found_div = 1;
                         break;
-                }
-        }
+                }        }
 
         if (!found_div)
                 return -EINVAL;
