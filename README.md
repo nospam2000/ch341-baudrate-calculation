@@ -19,14 +19,11 @@ The contents of this project:
 ## How is the baud rate calculated?
 
 It took me a while to figure it out, because all drivers are using magic constants like
-1532620800 which are not clear and none of the source code I have seen does it completely right,
-although the FreeBSD driver is pretty close but is missing support for the very high baud rates.
+1532620800 which are not clear. The FreeBSD driver was the best reference I could find.
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium baud rates like 38400, but almost all of
-them fail at higher baud rates like 921600 and at unusual baud rates like 256000. I didn't find one
-which supports 1500000, 2000000 and 3000000 baud, but you can use these rates with the information
-you can find here.
+them fail at higher baud rates like 921600 and at unusual baud rates like 256000.
 
 The base formular is very simply:
 
@@ -52,13 +49,13 @@ The ch341 has two registers which are related to the baud rate setting:
 FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
 to me if this has any effect on the baud rate. My speculation is that this might have
 something to do with the timing how long to wait for a character before sending the USB
-burst transfer. They calculate the following value:
+burst transfer or the length of the stop bits? They calculate the value using the following formula:
   
   UCHCOM_REG_BPS_MOD = (12000000 / 4 / baudrate + 1650 + 255) / 256
 
 ### Prescaler register 0x12 (Linux: CH341_REG_BPS_PRE, FreeBSD: UCHCOM_REG_BPS_PRE)
 
-Each bit has a meaning on its own:
+Each bit of this register has a meaning on its own:
  - bit 0: =1 turns off the prescaler of factor 8
  - bit 1: =1 turns off the prescaler of factor 64
  - bit 2: =1 turns off the prescaler of factor 2
@@ -73,13 +70,13 @@ They might contain some more modes about when to notify the host about newly rec
 
 ### Divisor register 0x13 (Linux: CH341_REG_BPS_DIV, FreeBSD: UCHCOM_REG_BPS_DIV)
 
-The divisor must be between 4 and 256. That means you have to choose a prescaler value so
+The divisor must be between 2 and 256. That means you have to choose a prescaler value so
 that the divisor is within this range. The smaller the prescaler the larger and typical
 better the divisor to get a small baud rate error.
 
 The maximum officially supported baud rate is 2000000. A baud rate of 3000000 can also be
 set and at least sending data at this rate is possible, but the stop bit length is too long
-for baud rates >= 1000000, details see chapter below. The smallest possible baud rate is 46.
+for baud rates > 500000, details see chapter below. The smallest possible baud rate is 46.
 
 Here the formula for the register values based on the `prescaler` and `divisor` values:
 
@@ -94,35 +91,10 @@ Using this formula together with choosing the right prescaler will give you an r
 The divisor register doesn't treat all values equally. The `divisor` values from 9 to 256 are
 just used normally, but when `prescaler=1` the values between 8 and 2 give a divisor which is just half of its
 value, for example using `divisor=8` only divides by 4.
-
-This is the reason for the following code:
-
-    if (prescaler == 1 && div <= 8 && div >= 4) {
-      div /= 2;
-      found_div = 1;
-      break;
-    }
                 
 `divisor = 1` results in a actual divisor of 78 when `prescaler=1` and is therefore not used.
 
-#### Rounding issues ####
-
-Why not just `(CH341_CRYSTAL_FREQ / (prescaler * baud_rate))`? Because we are using integer
-arithmetic and truncating values after the division leads to an error which only goes into
-the positive direction because the fractional part of divisor is lost.
-
-With floating point arithmetic you would do 5/10 bankers rounding to spread the error equally
-between positive and negative range:
-
-    divisor = TRUNC(CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 0.5)
-
-which is equal to
-
-    divisor = TRUNC((10 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 5) / 10)
-
-The first formula above does the same but using dual system integer arithmetic.
-
-#### Stop bit length too long for baud rates >= 1000000 ####
+#### Stop bit length too long for baud rates > 500000 ####
 The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP?raw=true)) which is correct for 500000.
 This means any baud rate above that has too long stop bits. For sending, this just
 reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
@@ -140,6 +112,24 @@ with a correct stop bit time sends with full speed.
 
 ###### 3000000 baud: 6 stop bits ######
 ![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
+
+#### Rounding issues ####
+
+Why not just using the simple formula `(CH341_CRYSTAL_FREQ / (prescaler * baud_rate))`? Because we are using integer
+arithmetic and truncating values after the division leads to an error which only goes into
+the positive direction because the fractional part of divisor is lost.
+
+With floating point arithmetic you would do 5/10 bankers rounding to spread the error equally
+between positive and negative range:
+
+    divisor = TRUNC(CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 0.5)
+
+which is equal to
+
+    divisor = TRUNC((10 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 5) / 10)
+
+The first formula above does the same but using dual system integer arithmetic.
+
 
 ## How to choose the prescaler value and write the calculation code
 
