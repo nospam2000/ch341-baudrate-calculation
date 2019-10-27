@@ -32,7 +32,7 @@ N: baud=1333333 real_baud=1333333.333   error=+0.00%    pre_reg=0x87    div_reg=
 ```
 
 
-Specifically the baud rates 921600 and 307200 have a large error with the original code.
+Specifically the common baud rates 921600 and 307200 have a large error with the original code.
 
 Here the complete list of baud rates tested. Only the ones which give different results between the old
 and new functions are printed above.
