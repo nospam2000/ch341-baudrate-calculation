@@ -63,7 +63,7 @@ They might contain some more modes about when to notify the host about newly rec
 The divisor must be between 1 and 256. That means you have to choose a prescaler value so
 that the divisor is within this range. The smaller the prescaler the larger and typical
 better the divisor to get a small baud rate error.
-The maximum supported baud rate is 2000000. 
+The maximum officially supported baud rate is 2000000, but 3000000 also works. 
 
     #define CH341_CRYSTAL_FREQ (12000000UL)
     divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 1) / 2
