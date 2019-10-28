@@ -141,8 +141,9 @@ You can use this code which iterates through all eight prescalar values in this 
 
 When it finds a prescaler value which gives a divisor within the allowed range from 
 4 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
-In [./patches] you can find a patch which can directly applied to a Linux kernel and is
-updated more often than the code here.
+In [./patches/Linux_4.14.114_ch341.patch](./patches/Linux_4.14.114_ch341.patch) you
+can find a patch which can directly applied to a Linux kernel and is updated more
+often than the code here.
 
     #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
@@ -153,6 +154,12 @@ updated more often than the code here.
             u8 reg_value;
             u32 prescaler_divisor;
     };
+    /*
+     * CH341A has 3 chained prescalers
+     * bit 0: disable prescaler factor *8
+     * bit 1: disable prescaler factor *64
+     * bit 2: disable prescaler factor *2
+     */
     static const struct ch341_prescalers prescaler_table[] = {
             { 7, 1 },
             { 3, 2 },
@@ -179,12 +186,6 @@ updated more often than the code here.
         if (priv->baud_rate < 46 || priv->baud_rate > 3030000)
                 return -EINVAL;
 
-        /*
-         * CH341A has 3 chained prescalers
-         * bit 0: disable prescaler factor *8
-         * bit 1: disable prescaler factor *64
-         * bit 2: disable prescaler factor *2
-         */
         found_div = 0;
         prescaler_index = 8; // illegal value, just to suppress compiler warning
         // start with the smallest possible prescaler value to get the
