@@ -150,10 +150,12 @@ often than the code here.
     #define CH341_REG_BPS_DIV      0x13
     #define CH341_REG_LCR          0x18
     #define CH341_REG_LCR2         0x25
-        struct ch341_prescalers {
+
+    struct ch341_prescalers {
             u8 reg_value;
             u32 prescaler_divisor;
     };
+
     /*
      * CH341A has 3 chained prescalers
      * bit 0: disable prescaler factor *8
