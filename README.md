@@ -40,7 +40,7 @@ The base formular is very simply:
    The divider factors are: 2, 8 and 64
    By multiplying these factors in all possible combinations you get the 8 dividing factors
    mentioned above.
- - 'divisor' is a number which can be chosen from 4 to 256.
+ - 'divisor' is a number which can be chosen from 2 to 256.
 
 ## How is the mapping between those variables and the registers of the CH341?
 
@@ -100,9 +100,9 @@ value, for example using `divisor=8` only divides by 4.
 The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP?raw=true)) which is correct for 500000.
 This means any baud rate above that has too long stop bits. For sending, this just
 reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
-with a correct stop bit time sends with full speed.
+with a correct stop bit time sends with full speed. 
 
-##### Here the resulting number of stop bits for sending data #####
+##### Here the measured number of stop bits for sending data #####
 ###### <= 500000 baud: 1 stop bits ######
 ![scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP)
 
