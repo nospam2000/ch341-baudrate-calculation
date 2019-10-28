@@ -24,21 +24,22 @@ It took me a while to figure it out, because all drivers are using magic constan
 1532620800 which are not clear. The FreeBSD driver was the best reference I could find.
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
-Most drivers give an acceptable baud rate for the medium baud rates like 38400, but almost all of
-them fail at higher baud rates like 921600 and at unusual baud rates like 256000.
+Most drivers give an acceptable baud rate for the medium and common baud rates like 38400,
+but almost all of them fail at higher baud rates like 921600 and at unusual baud rates
+like 256000.
 
-The base formular is very simply:
-
-***baud rate = 12000000 / prescaler / divisor***
+The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor***
 
  - '12000000' is the 12 MHz oszillator frequency which is also needed for the USB bus clock
  - 'prescaler' scales down the 12 MHz clock by a fixed dividing factor between 1 and 1024 which
    can be choosen from the following 8 values: 1, 2, 8, 16, 64, 128, 512, 1024.
-   Most drivers only use the following factors : 2, 16, 128 and 1024
-   Internally this works by providing three clock dividers which are cascaded and can be
-   separetely bypassed.
-   The divider factors are: 2, 8 and 64
-   By multiplying these factors in all possible combinations you get the 8 dividing factors
+
+   Most drivers only use the prescaler factors 2, 16, 128 and 1024. 
+   Internally the prescaler works by providing three clock dividers which are cascaded
+   and can be bypassed separetely.
+   
+   The three prescaler divisor base factors are 2, 8 and 64.
+   By multiplying these factors in all possible combinations you get the 8 prescaler factors
    mentioned above.
  - 'divisor' is a number which can be chosen from 2 to 256.
 
