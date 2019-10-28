@@ -13,6 +13,8 @@ The contents of this project:
    formulas are correct. It also contains the error calculation. Baud rates not contained can
    easily be added to see their error value.
  - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
+   and a unit test to compare the result to the original implementation and the implementation
+   from Jonathan Olds' patch.
  - [measurements](./measurements/) : measurements of transmissions with some baud rates.
    The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted
 
