@@ -41,7 +41,7 @@ The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor*
    The three prescaler divisor base factors are 2, 8 and 64.
    By multiplying these factors in all possible combinations you get the 8 prescaler factors
    mentioned above.
- - 'divisor' is a number which can be chosen from 2 to 256.
+ - 'divisor' is a number which can be chosen from 2 to 256 (with some limitations when `prescaler=1`)
 
 ## How is the mapping between those variables and the registers of the CH341?
 
