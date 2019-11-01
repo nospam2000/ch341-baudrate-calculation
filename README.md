@@ -22,7 +22,9 @@ The contents of this project:
 ## How is the baud rate calculated?
 
 It took me a while to figure it out, because all drivers are using magic constants like
-1532620800 which are not clear. The FreeBSD driver was the best reference I could find.
+1532620800 which are not clear. The FreeBSD driver was the best reference I could find,
+but it is also using hardcoded magic register values for 921600 and 307200 baud
+and not an algorithm.
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium and common baud rates like 38400,
@@ -35,7 +37,7 @@ The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor*
  - 'prescaler' scales down the 12 MHz clock by a fixed dividing factor between 1 and 1024 which
    can be choosen from the following 8 values: 1, 2, 8, 16, 64, 128, 512, 1024.
 
-   Most drivers only use the prescaler factors 2, 16, 128 and 1024. 
+   Most drivers only use the prescaler factors 2, 16, 128 and 1024 (register values 0 to 3). 
    Internally the prescaler works by providing three clock dividers which are cascaded
    and can be bypassed separetely.
    
