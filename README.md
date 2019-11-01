@@ -87,8 +87,8 @@ Using this formula together with choosing the right prescaler will give you an r
 #### Divisor values < 8 ####
 
 The divisor register doesn't treat all values equally. The `divisor` values from 9 to 256 are
-just used normally, but when `prescaler=1` the values between 8 and 2 give a divisor which is just half of its
-value, for example using `divisor=8` only divides by 4.
+just used normally, but when `prescaler=1` the values between 8 and 2 give a divisor which
+is double of the specified value, for example using `divisor=8` divides by 16.
                 
 `divisor = 1` results in a actual divisor of 78 when `prescaler=1` and is therefore not used.
 
