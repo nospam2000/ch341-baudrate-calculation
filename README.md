@@ -15,8 +15,9 @@ The contents of this project:
  - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
    and a unit test to compare the result to the original implementation and the implementation
    from Jonathan Olds' patch.
- - [measurements](./measurements/) : measurements of transmissions with some baud rates.
-   The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted
+ - [measurements](./measurements/) : scope measurements of transmissions with some baud rates.
+   The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted.
+   Includes pictures and csv raw data.
 
 ## How is the baud rate calculated?
 
