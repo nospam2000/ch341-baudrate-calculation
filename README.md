@@ -155,6 +155,7 @@ often than the code here.
             { 0, 1024 }
     };
     #define PRESCALER_TABLE_SIZE (sizeof(prescaler_table) / sizeof(prescaler_table[0]))
+    
     static int ch341_set_baudrate_lcr(struct usb_device *dev,
                                       struct ch341_private *priv, u8 lcr)
     {
