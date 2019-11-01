@@ -104,7 +104,7 @@ This means any baud rate above that has too long stop bits. For sending, this ju
 reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
 with a correct stop bit time sends with full speed. 
 
-##### Here the measured number of stop bits for sending data #####
+##### Here the measured number of stop bits for sending data (the transmitted values are 0x55) #####
 ###### <= 500000 baud: 1 stop bits ######
 ![scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP)
 
