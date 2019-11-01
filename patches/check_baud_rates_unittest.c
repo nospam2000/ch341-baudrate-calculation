@@ -70,10 +70,18 @@ struct usb_device {int dummy;};
 #define CH341_REQ_MODEM_CTRL   0xA4
 
 #define CH341_REG_BREAK        0x05
+#define CH341_REG_STAT1        0x06
+#define CH341_REG_STAT2        0x07
 #define CH341_REG_BPS_PRE      0x12
 #define CH341_REG_BPS_DIV      0x13
-#define CH341_REG_LCR          0x18
+#define CH341_REG_BPS_MOD      0x14
+#define CH341_REG_BPS_PAD      0x0F
+#define CH341_REG_LCR1         0x18
 #define CH341_REG_LCR2         0x25
+
+#define CH341_BPS_MOD_BASE     20000000
+#define CH341_BPS_MOD_BASE_OFS 1100
+
 #define CH341_NBREAK_BITS      0x01
 
 #define CH341_LCR_ENABLE_RX    0x80
@@ -303,7 +311,7 @@ static int ch341_set_baudrate_lcr_new(struct usb_device *dev,
 		return r;
 
 	r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
-		(CH341_REG_LCR2 << 8) | CH341_REG_LCR, lcr);
+		(CH341_REG_LCR2 << 8) | CH341_REG_LCR1, lcr);
 	if (r)
 		return r;
 
@@ -449,6 +457,7 @@ void test_list()
 		1090909, 1200000, 1333333, 1500000, 2000000, 3000000,
 	};
 
+	printf("baud\terrOrig\terrMike\terrJon\tpre*divOrig\tpre*divMike\tpre*divJon\n");
 	for(unsigned long i = 0; i < ARRAY_SIZE(baud_rates); i++) {
 		unsigned long baud = baud_rates[i];
 		struct baud_compare bc1;
@@ -458,56 +467,11 @@ void test_list()
 		test_baud_rate(&bc2, baud, ch341_set_baudrate_lcr_new);
 		test_baud_rate(&bc3, baud, ch341_set_baudrate_lcr_jon);
 
-		printf("baud=%ld  \terrorOrig=%+.2lf\%  \terrorNew=%+.2lf\%  \terrorJon=%+.2lf\%  \tpre*divOrig=%ld*%ld  \tpre*divNew=%ld*%ld  \tpre*divJon=%ld*%ld\n",
+		//printf("baud=%ld \terrOrig=%+.2lf\%  \terrMike=%+.2lf\%  \terrJon=%+.2lf\%  \tpre*divOrig=%ld*%ld  \tpre*divMike=%ld*%ld  \tpre*divJon=%ld*%ld\n",
+		printf("%ld\t%+.2lf\%\t%+.2lf\%\t%+.2lf\%\t%ld*%ld      \t%ld*%ld      \t%ld*%ld\n",
 			bc1.baud, bc1.baud_error, bc2.baud_error, bc3.baud_error, bc1.pre, bc1.div, bc2.pre, bc2.div, bc3.pre, bc3.div);
-#if 0
-			printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc1.baud, bc1.real_baud, bc1.baud_error, bc1.pre_reg, bc1.div_reg, bc1.pre, bc1.div);
-			printf("N: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
-#endif
-
-
-#if 0
-
-		if(fabs(fabs(bc1.baud_error) - fabs(bc2.baud_error)) > 0.01) // ignore floating point errors
-		{
-			if(fabs(bc1.baud_error) < fabs(bc2.baud_error))
-			{
-				origBetter++;
-#if 1
-			printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc1.baud, bc1.real_baud, bc1.baud_error, bc1.pre_reg, bc1.div_reg, bc1.pre, bc1.div);
-			printf("N: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
-#endif
-			}
-			else if(fabs(bc1.baud_error) > fabs(bc2.baud_error))
-			{
-				newBetter++;
-#if 1
-			printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc1.baud, bc1.real_baud, bc1.baud_error, bc1.pre_reg, bc1.div_reg, bc1.pre, bc1.div);
-			printf("N: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
-#endif
-			}
-		}
-
-		if(fabs(bc2.baud_error) > 0.8)
-		{
-			badCounter++;
-#if 1
-			printf("O: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc1.baud, bc1.real_baud, bc1.baud_error, bc1.pre_reg, bc1.div_reg, bc1.pre, bc1.div);
-			printf("N: baud=%ld\treal_baud=%.3lf\terror=%+.2lf\%\tpre_reg=0x%02x\tdiv_reg=0x%02x\tpre=%lu\tdiv=%lu\n",
-			      bc2.baud, bc2.real_baud, bc2.baud_error, bc2.pre_reg, bc2.div_reg, bc2.pre, bc2.div);
-#endif
-		}
-#endif
 	}
-
-	//printf("newBetter:%ld, origBetter:%ld, badCounter:%ld\n", newBetter, origBetter, badCounter);
+	printf("\n");
 }
 
 int main(int argc, char**argv)
