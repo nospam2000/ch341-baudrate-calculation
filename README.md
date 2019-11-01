@@ -141,7 +141,7 @@ You can use this code which iterates through all eight prescalar values in this 
   1, 2, 8, 16, 64, 128, 512, 1024
 
 When it finds a prescaler value which gives a divisor within the allowed range from 
-4 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
+2 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
 In [./patches/Linux_4.14.114_ch341.patch](./patches/Linux_4.14.114_ch341.patch) you
 can find a patch which can directly applied to a Linux kernel and is updated more
 often than the code here.
