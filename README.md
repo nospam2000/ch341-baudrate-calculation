@@ -13,6 +13,8 @@ The contents of this project:
    formulas are correct. It also contains the error calculation. Baud rates not contained can
    easily be added to see their error value.
  - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
+   and a unit test to compare the result to the original implementation and the implementation
+   from Jonathan Olds' patch.
  - [measurements](./measurements/) : measurements of transmissions with some baud rates.
    The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted
 
@@ -22,23 +24,24 @@ It took me a while to figure it out, because all drivers are using magic constan
 1532620800 which are not clear. The FreeBSD driver was the best reference I could find.
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
-Most drivers give an acceptable baud rate for the medium baud rates like 38400, but almost all of
-them fail at higher baud rates like 921600 and at unusual baud rates like 256000.
+Most drivers give an acceptable baud rate for the medium and common baud rates like 38400,
+but almost all of them fail at higher baud rates like 921600 and at unusual baud rates
+like 256000.
 
-The base formular is very simply:
-
-***baud rate = 12000000 / prescaler / divisor***
+The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor***
 
  - '12000000' is the 12 MHz oszillator frequency which is also needed for the USB bus clock
  - 'prescaler' scales down the 12 MHz clock by a fixed dividing factor between 1 and 1024 which
    can be choosen from the following 8 values: 1, 2, 8, 16, 64, 128, 512, 1024.
-   Most drivers only use the following factors : 2, 16, 128 and 1024
-   Internally this works by providing three clock dividers which are cascaded and can be
-   separetely bypassed.
-   The divider factors are: 2, 8 and 64
-   By multiplying these factors in all possible combinations you get the 8 dividing factors
+
+   Most drivers only use the prescaler factors 2, 16, 128 and 1024. 
+   Internally the prescaler works by providing three clock dividers which are cascaded
+   and can be bypassed separetely.
+   
+   The three prescaler divisor base factors are 2, 8 and 64.
+   By multiplying these factors in all possible combinations you get the 8 prescaler factors
    mentioned above.
- - 'divisor' is a number which can be chosen from 4 to 256.
+ - 'divisor' is a number which can be chosen from 2 to 256 (with some limitations when `prescaler=1`)
 
 ## How is the mapping between those variables and the registers of the CH341?
 
@@ -47,9 +50,11 @@ The ch341 has two registers which are related to the baud rate setting:
  - 0x13: Divisor register
 
 FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
-to me if this has any effect on the baud rate. My speculation is that this might have
-something to do with the timing how long to wait for a character before sending the USB
-burst transfer or the length of the stop bits? They calculate the value using the following formula:
+to me if this has any effect on the baud rate. My speculation is that this has
+something to do with the timing, e.g. how long to wait for a character before sending the USB
+burst transfer or the length of the stop bits above 500000 baud?
+
+They calculate the value using the following formula:
   
   UCHCOM_REG_BPS_MOD = (12000000 / 4 / baudrate + 1650 + 255) / 256
 
@@ -66,7 +71,6 @@ For example to get a prescaler of 16 use a value of `%10000010 == 0x82` to turn 
 and activate the x2 and x8 dividers.
 
 The meaning of the bits 3 to 6 is unknown, all drivers set them to 0.
-They might contain some more modes about when to notify the host about newly received values.
 
 ### Divisor register 0x13 (Linux: CH341_REG_BPS_DIV, FreeBSD: UCHCOM_REG_BPS_DIV)
 
@@ -94,25 +98,6 @@ value, for example using `divisor=8` only divides by 4.
                 
 `divisor = 1` results in a actual divisor of 78 when `prescaler=1` and is therefore not used.
 
-#### Stop bit length too long for baud rates > 500000 ####
-The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP?raw=true)) which is correct for 500000.
-This means any baud rate above that has too long stop bits. For sending, this just
-reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
-with a correct stop bit time sends with full speed.
-
-##### Here the resulting number of stop bits for sending data #####
-###### <= 500000 baud: 1 stop bits ######
-![scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP)
-
-###### 1000000 baud: 2 stop bits ######
-![scope picture](./measurements/1000000_baud_0x55_0x55/F0009TEK.BMP)
-
-###### 2000000 baud: 4 stop bits ######
-![scope picture](./measurements/2000000_baud_0x55_0x55_0x55_0x55/F0008TEK.BMP)
-
-###### 3000000 baud: 6 stop bits ######
-![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
-
 #### Rounding issues ####
 
 Why not just using the simple formula `(CH341_CRYSTAL_FREQ / (prescaler * baud_rate))`? Because we are using integer
@@ -137,19 +122,28 @@ You can use this code which iterates through all eight prescalar values in this 
   1, 2, 8, 16, 64, 128, 512, 1024
 
 When it finds a prescaler value which gives a divisor within the allowed range from 
-4 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
-In [./patches] you can find a patch which can directly applied to a Linux kernel and is
-updated more often than the code here.
+2 to 256 it calculates `prescaler_register_value` and sets `foundDivisor=true`.
+In [./patches/Linux_4.14.114_ch341.patch](./patches/Linux_4.14.114_ch341.patch) you
+can find a patch which can directly applied to a Linux kernel and is updated more
+often than the code here.
 
     #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
     #define CH341_REG_BPS_DIV      0x13
     #define CH341_REG_LCR          0x18
     #define CH341_REG_LCR2         0x25
-        struct ch341_prescalers {
+
+    struct ch341_prescalers {
             u8 reg_value;
             u32 prescaler_divisor;
     };
+
+    /*
+     * CH341A has 3 chained prescalers
+     * bit 0: disable prescaler factor *8
+     * bit 1: disable prescaler factor *64
+     * bit 2: disable prescaler factor *2
+     */
     static const struct ch341_prescalers prescaler_table[] = {
             { 7, 1 },
             { 3, 2 },
@@ -163,66 +157,62 @@ updated more often than the code here.
     #define PRESCALER_TABLE_SIZE (sizeof(prescaler_table) / sizeof(prescaler_table[0]))
     
     static int ch341_set_baudrate_lcr(struct usb_device *dev,
-                                  struct ch341_private *priv, u8 lcr)
+                                      struct ch341_private *priv, u8 lcr)
     {
-        unsigned long div;
-        short prescaler_index;
-        u8 div_regvalue;
-        unsigned long prescaler;
-        short prescaler_regvalue;
-        int found_div;
-        int r;
-
-        if (priv->baud_rate < 46 || priv->baud_rate > 3030000)
-                return -EINVAL;
-
-        /*
-         * CH341A has 3 chained prescalers
-         * bit 0: disable prescaler factor *8
-         * bit 1: disable prescaler factor *64
-         * bit 2: disable prescaler factor *2
-         */
-        found_div = 0;
-        prescaler_index = 8; // illegal value, just to suppress compiler warning
-        // start with the smallest possible prescaler value to get the
-        // best precision at first match (largest mantissa value)
-        for (prescaler_index = 0; prescaler_index < ARRAY_SIZE(scaler_tab);
-                        ++prescaler_index) {
-                prescaler = scaler_tab[prescaler_index].prescaler_div;
-                div = ((2UL * CH341_OSC_F)
-                        / (prescaler * priv->baud_rate) + 1UL) / 2UL;
-
-                // when prescaler==1 the divisors from 8 to 2 are
-                // actually 16 to 4, skip them
-                if (prescaler == 1 && div <= 8) {
-                        continue;
-                } else if (div <= 256 && div >= 2) {
-                        found_div = 1;
-                        break;
-                }        }
-
-        if (!found_div)
-                return -EINVAL;
-
-        /*
-         * CH341A buffers data until a full endpoint-size packet (32 bytes)
-         * has been received unless bit 7 is set.
-         */
-        prescaler_regvalue = scaler_tab[prescaler_index].reg_value | BIT(7);
-        div_regvalue = 256 - div;
-        r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
-                (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-                (div_regvalue << 8) | prescaler_regvalue);
-        if (r)
-                return r;
-
-        r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
-                (CH341_REG_LCR2 << 8) | CH341_REG_LCR, lcr);
-        if (r)
-                return r;
-
-        return r;
-    }    
+            int found_div;
+            u8 div_regvalue;
+            u8 prescaler_regvalue;
+            u8 mod_regval;
+            short prescaler_index;
+            int r;
+    
+            if (priv->baud_rate < 46 || priv->baud_rate > 3030000)
+                    return -EINVAL;
+    
+            found_div = 0;
+            // start with the smallest possible prescaler value to get the
+            // best precision at first match (largest mantissa value)
+            for (prescaler_index = 0; prescaler_index < ARRAY_SIZE(scaler_tab);
+                            ++prescaler_index) {
+                    unsigned long prescaler;
+                    unsigned long div;
+    
+                    prescaler = scaler_tab[prescaler_index].prescaler_div;
+                    div = ((2UL * CH341_OSC_F)
+                            / (prescaler * priv->baud_rate) + 1UL) / 2UL;
+                    // when prescaler==1 the divisors from 8 to 2 are
+                    // actually 16 to 4; skip them, use next prescaler
+                    if (prescaler == 1 && div <= 8) {
+                            continue;
+                    } else if (div <= 256 && div >= 2) {
+                            found_div = 1;
+                            prescaler_regvalue =
+                                    scaler_tab[prescaler_index].reg_value | BIT(7);
+                            div_regvalue = 256 - div;
+                            break;
+                    }
+            }
+    
+            if (!found_div)
+                    return -EINVAL;
+    
+            /*
+             * CH341A buffers data until a full endpoint-size packet (32 bytes)
+             * has been received unless bit 7 is set.
+             */
+            r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
+                    (CH341_REG_BPS_DIV << 8) | CH341_REG_BPS_PRE,
+                    (div_regvalue      << 8) | prescaler_regvalue);
+            if (r)  
+                    return r;
+            r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
+                    (CH341_REG_LCR2 << 8) | CH341_REG_LCR1, lcr);
+            if (r)
+                    return r;
+    
+            return r;
+    }
+    
     
 ## How to set the registers?
 
@@ -262,6 +252,26 @@ With `prescaler=2` and `divider=6` for 921600 baud (complete divisor=12 instead 
 
 So you can see that choosing the correct prescaler value and using correct rounding is essential to get a smaller error.
 
+## Stop bit length too long for baud rates > 500000 ##
+The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP?raw=true)) which is correct for 500000.
+This means any baud rate above that has too long stop bits. For sending, this just
+reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
+with a correct stop bit time sends with full speed. 
+
+### Here the measured number of stop bits for sending data (the transmitted values are 0x55) ###
+#### <= 500000 baud: 1 stop bits ####
+![scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP)
+
+#### 1000000 baud: 2 stop bits ####
+![scope picture](./measurements/1000000_baud_0x55_0x55/F0009TEK.BMP)
+
+#### 2000000 baud: 4 stop bits ####
+![scope picture](./measurements/2000000_baud_0x55_0x55_0x55_0x55/F0008TEK.BMP)
+
+#### 3000000 baud: 6 stop bits ####
+![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
+
+
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
    and providing a patch to improve the baud rate calculation
@@ -276,5 +286,6 @@ So you can see that choosing the correct prescaler value and using correct round
 - [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
 - [Linux kernel patch to improve accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
 - [Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
+- [Linux kernel patch which improved the baud rate calculation and adds register names](https://lore.kernel.org/patchwork/patch/139700/)
 
 
