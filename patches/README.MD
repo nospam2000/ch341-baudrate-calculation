@@ -10,15 +10,17 @@ The script [build.sh](./build.sh) is used by me to build and load the patched ke
 
 ## Testing common baud rates
 
-For the following common baud rates my new function gives a better result than the original code.
-Specifically the common baud rate 921600 has a high error and also the not so common baud 
-rates 256000, 307200, 1090909 and 1333333 have a large error with the original code.
+Here a comparison between the relative error in % between my algorithm and the original algorithm.
+Specifically the common baud rate 921600 which is often used on ESP8266 and ESP32 boards to upload
+new code has a high error. The not so common baud rates 110, 256000, 307200, 1090909 and 1333333
+have a large error with the original code.
 
 The columns have the following meaning:
- - `baus` means the requested baud rate
+ - `baud` means the requested baud rate
  - `errorOrig` is the relative error of the resulting baud rate using the original code
  - `errorNew` is the relative error of the resulting baud rate using my new code
- 
+ - `pre/divOrig` the values of prescaler and divisor using the original code
+ - `pre/divNew` the values of prescaler and divisor using my new code
 ```
 baud=46         errorOrig=-0.10%        errorNew=-0.10%         pre/divOrig=1024/255    pre/divNew=1024/255
 baud=50         errorOrig=+0.16%        errorNew=+0.16%         pre/divOrig=1024/234    pre/divNew=1024/234
