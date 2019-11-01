@@ -52,15 +52,6 @@ The ch341 has two registers which are related to the baud rate setting:
  - 0x12: Prescaler register 
  - 0x13: Divisor register
 
-FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
-to me if this has any effect on the baud rate. My speculation is that this has
-something to do with the timing, e.g. how long to wait for a character before sending the USB
-burst transfer or the length of the stop bits above 500000 baud?
-
-They calculate the value using the following formula:
-  
-  UCHCOM_REG_BPS_MOD = (12000000 / 4 / baudrate + 1650 + 255) / 256
-
 ### Prescaler register 0x12 (Linux: CH341_REG_BPS_PRE, FreeBSD: UCHCOM_REG_BPS_PRE)
 
 Each bit of this register has a meaning on its own:
@@ -117,6 +108,18 @@ which is equal to
     divisor = TRUNC((10 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 5) / 10)
 
 The first formula above does the same but using dual system integer arithmetic.
+
+
+### MOD register 0x14 (Linux: CH341_REG_BPS_MOD, FreeBSD: UCHCOM_REG_BPS_MOD)
+
+FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
+to me if this has any effect on the baud rate. My speculation is that this has
+something to do with the timing, e.g. how long to wait for a character before sending the USB
+burst transfer or the length of the stop bits above 500000 baud?
+
+They calculate the value using the following (simplified) formula:
+  
+  UCHCOM_REG_BPS_MOD = (12000000 / 4 / baudrate + 1650 + 255) / 256
 
 
 ## How to choose the prescaler value and write the calculation code
