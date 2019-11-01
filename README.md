@@ -136,7 +136,7 @@ often than the code here.
     #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
     #define CH341_REG_BPS_DIV      0x13
-    #define CH341_REG_LCR          0x18
+    #define CH341_REG_LCR1         0x18
     #define CH341_REG_LCR2         0x25
 
     struct ch341_prescalers {
