@@ -98,25 +98,6 @@ value, for example using `divisor=8` only divides by 4.
                 
 `divisor = 1` results in a actual divisor of 78 when `prescaler=1` and is therefore not used.
 
-#### Stop bit length too long for baud rates > 500000 ####
-The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP?raw=true)) which is correct for 500000.
-This means any baud rate above that has too long stop bits. For sending, this just
-reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
-with a correct stop bit time sends with full speed. 
-
-##### Here the measured number of stop bits for sending data (the transmitted values are 0x55) #####
-###### <= 500000 baud: 1 stop bits ######
-![scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP)
-
-###### 1000000 baud: 2 stop bits ######
-![scope picture](./measurements/1000000_baud_0x55_0x55/F0009TEK.BMP)
-
-###### 2000000 baud: 4 stop bits ######
-![scope picture](./measurements/2000000_baud_0x55_0x55_0x55_0x55/F0008TEK.BMP)
-
-###### 3000000 baud: 6 stop bits ######
-![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
-
 #### Rounding issues ####
 
 Why not just using the simple formula `(CH341_CRYSTAL_FREQ / (prescaler * baud_rate))`? Because we are using integer
@@ -268,6 +249,26 @@ With `prescaler=2` and `divider=6` for 921600 baud (complete divisor=12 instead 
     baud rate error = (1000000.00 / 921600 - 1) * 100% = 8.51%
 
 So you can see that choosing the correct prescaler value and using correct rounding is essential to get a smaller error.
+
+## Stop bit length too long for baud rates > 500000 ##
+The minimum stop bit time for transmitting is 2.00 µs (see [scope picture](./measurements/3000000_baud_zoom_stopbit/F0007TEK.BMP?raw=true)) which is correct for 500000.
+This means any baud rate above that has too long stop bits. For sending, this just
+reduces the throughput (bytes/s) but I haven't tested if data is lost when a sender
+with a correct stop bit time sends with full speed. 
+
+### Here the measured number of stop bits for sending data (the transmitted values are 0x55) ###
+#### <= 500000 baud: 1 stop bits ####
+![scope picture](./measurements/500000_baud_0x55_0x55_0x55_0x55/F0010TEK.BMP)
+
+#### 1000000 baud: 2 stop bits ####
+![scope picture](./measurements/1000000_baud_0x55_0x55/F0009TEK.BMP)
+
+#### 2000000 baud: 4 stop bits ####
+![scope picture](./measurements/2000000_baud_0x55_0x55_0x55_0x55/F0008TEK.BMP)
+
+#### 3000000 baud: 6 stop bits ####
+![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
+
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
