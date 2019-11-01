@@ -155,62 +155,63 @@ often than the code here.
             { 0, 1024 }
     };
     #define PRESCALER_TABLE_SIZE (sizeof(prescaler_table) / sizeof(prescaler_table[0]))
-    
     static int ch341_set_baudrate_lcr(struct usb_device *dev,
-                                  struct ch341_private *priv, u8 lcr)
+                                      struct ch341_private *priv, u8 lcr)
     {
-        unsigned long div;
-        short prescaler_index;
-        u8 div_regvalue;
-        unsigned long prescaler;
-        short prescaler_regvalue;
-        int found_div;
-        int r;
-
-        if (priv->baud_rate < 46 || priv->baud_rate > 3030000)
-                return -EINVAL;
-
-        found_div = 0;
-        prescaler_index = 8; // illegal value, just to suppress compiler warning
-        // start with the smallest possible prescaler value to get the
-        // best precision at first match (largest mantissa value)
-        for (prescaler_index = 0; prescaler_index < ARRAY_SIZE(scaler_tab);
-                        ++prescaler_index) {
-                prescaler = scaler_tab[prescaler_index].prescaler_div;
-                div = ((2UL * CH341_OSC_F)
-                        / (prescaler * priv->baud_rate) + 1UL) / 2UL;
-
-                // when prescaler==1 the divisors from 8 to 2 are
-                // actually 16 to 4, skip them
-                if (prescaler == 1 && div <= 8) {
-                        continue;
-                } else if (div <= 256 && div >= 2) {
-                        found_div = 1;
-                        break;
-                }        }
-
-        if (!found_div)
-                return -EINVAL;
-
-        /*
-         * CH341A buffers data until a full endpoint-size packet (32 bytes)
-         * has been received unless bit 7 is set.
-         */
-        prescaler_regvalue = scaler_tab[prescaler_index].reg_value | BIT(7);
-        div_regvalue = 256 - div;
-        r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
-                (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-                (div_regvalue << 8) | prescaler_regvalue);
-        if (r)
-                return r;
-
-        r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
-                (CH341_REG_LCR2 << 8) | CH341_REG_LCR, lcr);
-        if (r)
-                return r;
-
-        return r;
-    }    
+            int found_div;
+            u8 div_regvalue;
+            u8 prescaler_regvalue;
+            u8 mod_regval;
+            short prescaler_index;
+            int r;
+    
+            if (priv->baud_rate < 46 || priv->baud_rate > 3030000)
+                    return -EINVAL;
+    
+            found_div = 0;
+            // start with the smallest possible prescaler value to get the
+            // best precision at first match (largest mantissa value)
+            for (prescaler_index = 0; prescaler_index < ARRAY_SIZE(scaler_tab);
+                            ++prescaler_index) {
+                    unsigned long prescaler;
+                    unsigned long div;
+    
+                    prescaler = scaler_tab[prescaler_index].prescaler_div;
+                    div = ((2UL * CH341_OSC_F)
+                            / (prescaler * priv->baud_rate) + 1UL) / 2UL;
+                    // when prescaler==1 the divisors from 8 to 2 are
+                    // actually 16 to 4; skip them, use next prescaler
+                    if (prescaler == 1 && div <= 8) {
+                            continue;
+                    } else if (div <= 256 && div >= 2) {
+                            found_div = 1;
+                            prescaler_regvalue =
+                                    scaler_tab[prescaler_index].reg_value | BIT(7);
+                            div_regvalue = 256 - div;
+                            break;
+                    }
+            }
+    
+            if (!found_div)
+                    return -EINVAL;
+    
+            /*
+             * CH341A buffers data until a full endpoint-size packet (32 bytes)
+             * has been received unless bit 7 is set.
+             */
+            r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
+                    (CH341_REG_BPS_DIV << 8) | CH341_REG_BPS_PRE,
+                    (div_regvalue      << 8) | prescaler_regvalue);
+            if (r)  
+                    return r;
+            r = ch341_control_out(dev, CH341_REQ_WRITE_REG,
+                    (CH341_REG_LCR2 << 8) | CH341_REG_LCR1, lcr);
+            if (r)
+                    return r;
+    
+            return r;
+    }
+    
     
 ## How to set the registers?
 
