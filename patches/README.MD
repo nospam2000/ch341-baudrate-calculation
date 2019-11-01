@@ -4,7 +4,7 @@ This directory contains [a Linux kernel driver patch](./Linux_4.14.114_ch341.pat
 There is also a [unit test](./check_baud_rates_unittest.c) which checks the baud rate error
 and compares the result of the original code and the new algorithm.
 
-The script [build.sh](./build.sh) is used by me to build and load the patched kernel modulu without building the whole kernel.
+The script [build.sh](./build.sh) is used by me to build and load the patched kernel module without building the whole kernel.
 
 # Result of the unit test
 
@@ -17,10 +17,12 @@ have a large error with the original code.
 
 The columns have the following meaning:
  - `baud` means the requested baud rate
- - `errorOrig` is the relative error of the resulting baud rate using the original code
- - `errorNew` is the relative error of the resulting baud rate using my new code
+ - `errOrig` is the relative error of the resulting baud rate using the original code
+ - `errMike` is the relative error of the resulting baud rate using my new code
+ - `errJon` is the relative error of the resulting baud rate using Jonathan Olds' code
  - `pre/divOrig` the values of prescaler and divisor using the original code
- - `pre/divNew` the values of prescaler and divisor using my new code
+ - `pre/divMike` the values of prescaler and divisor using my new code
+ - `pre/divJon` the values of prescaler and divisor using Jonathan Olds' code
 ```
     baud    errOrig errMike errJon  pre*divOrig     pre*divMike     pre*divJon
     46      -0.10%  -0.10%  -0.10%  1024*255        1024*255        1024*255
@@ -78,11 +80,9 @@ This means the original algorithm was never better and the new algorithm was bet
 `badCounter:0` means the new algorithm didn't have any baud rate error >0.8%.
 
 Above 100000 this test makes no sense because only few numbers give little baud rate errors when the
-divisor gets smaller than 100.See above for the tested common baud rates.
+divisor gets smaller than 100. See above for the tested common baud rates.
 
 ## How does the unit test work?
 
-It emulates a test bed, for the original functions, that means the original functions can be copied
+It emulates a test bed, for the original functions, that means the original functions can be used
 without modifying them.
-
-
