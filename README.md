@@ -281,9 +281,10 @@ with a correct stop bit time sends with full speed.
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
    and providing a patch to improve the baud rate calculation
+ - Johan Hovold for maintaining the Linux driver
+ - the authors of the Linux ch341 driver for providing the driver I need
  - the authors of the FreeBSD ch341 driver for giving some more insights. If you read this,
    please tell me the meaning of UCHCOM_REG_BPS_MOD
- - the authors of the Linux ch341 driver for providing the driver I need
  - Apple for providing a ch341 driver. I would be happy if you could use my work to fix
    the baud rate 921600.
 
