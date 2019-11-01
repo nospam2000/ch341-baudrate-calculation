@@ -72,7 +72,7 @@ The second test scans all single baud rates between 46 and 100000 and compares w
 better result, here the result: `newBetter:44653, origBetter:0, badCounter:0`
 
 This means the original algorithm was never better and the new algorithm was better 44653 times.
-`badCounter:0` means the new algorithm didn't have any baud rate error than 0.8%.
+`badCounter:0` means the new algorithm didn't have any baud rate error >0.8%.
 
 Above 100000 this test makes no sense because only few numbers give little baud rate errors, see above
 for the tested common baud rates.
