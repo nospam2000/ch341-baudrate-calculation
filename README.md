@@ -316,8 +316,9 @@ with a correct stop bit time sends with full speed.
 - [NetBSD ch341 driver changlelog](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN) 
 - [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c)
 - [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
-- [Linux kernel patch to improve accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
-- [Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
+- [Linux ch341 kernel patch to improve baud rate mail thread](https://lore.kernel.org/linux-usb/001001d590e9$262004f0$72600ed0$@co.nz/T/#t)
+- [Linux ch341 kernel patch to improve baud rate accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
+- [Linux ch341 kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
 - [Linux kernel patch which improved the baud rate calculation and adds register names](https://lore.kernel.org/patchwork/patch/139700/)
 
 
