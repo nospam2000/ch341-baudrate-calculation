@@ -118,10 +118,12 @@ system integer arithmetic with `(2 * ... + 1) / 2`.
 
 ### MOD register 0x14 (Linux: CH341_REG_BPS_MOD, FreeBSD: UCHCOM_REG_BPS_MOD)
 
-FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
-to me if this has any effect on the baud rate. My speculation is that this has
-something to do with the timing, e.g. how long to wait for a character before sending the USB
-burst transfer or the length of the stop bits above 500000 baud?
+FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but the reason
+is unclear to me. It doesn't have a direct influence on the baud rate.
+
+My speculation is that this could have something to do with other timing based setting,
+e.g. how long to wait for a character before sending the USB transfer or the
+length of the stop bits above 500000 baud?
 
 They calculate the value using the following (simplified) formula:
   
