@@ -39,12 +39,12 @@ The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor*
 
    Most drivers only use the prescaler factors 2, 16, 128 and 1024 (register values 0 to 3). 
    Internally the prescaler works by providing three clock dividers which are cascaded
-   and can be bypassed separetely.
+   and can be bypassed separately.
    
    The three prescaler divisor base factors are 2, 8 and 64.
    By multiplying these factors in all possible combinations you get the 8 prescaler factors
    mentioned above.
- - 'divisor' is a number which can be chosen from 2 to 256 (with some limitations when `prescaler=1`)
+ - 'divisor' is a number which can be chosen from 2 to 256 (with some limitations when `prescaler=1`, see below)
 
 ## How is the mapping between those variables and the registers of the CH341?
 
@@ -64,7 +64,7 @@ Each bit of this register has a meaning on its own:
 For example to get a prescaler of 16 use a value of `%10000010 == 0x82` to turn off the x64 divider
 and activate the x2 and x8 dividers.
 
-The meaning of the bits 3 to 6 is unknown, all drivers set them to 0.
+The meaning of the bits 3 to 6 is unknown, all known drivers set them to 0.
 
 ### Divisor register 0x13 (Linux: CH341_REG_BPS_DIV, FreeBSD: UCHCOM_REG_BPS_DIV)
 
@@ -79,24 +79,27 @@ for baud rates > 500000, details see chapter below. The smallest possible baud r
 Here the formula for the register values based on the `prescaler` and `divisor` values:
 
     #define CH341_CRYSTAL_FREQ (12000000UL)
-    divisor = (2 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 1) / 2
+    divisor = (2UL * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 1UL) / 2UL
     CH341_REG_BPS_DIV = 256 - divisor
 
 Using this formula together with choosing the right prescaler will give you an relative baud rate error <= 0.16% for the common baud rates. For all other baud rates between 46 to 100000 (the uncommon ones) the error is < 0.8% . Above 100000 baud you should only use selected baud rates.
 
-#### Divisor values < 8 ####
+#### Divisor values <= 8 when prescaler=1 ####
 
 The divisor register doesn't treat all values equally. The `divisor` values from 9 to 256 are
-just used normally, but when `prescaler=1` the values between 8 and 2 give a divisor which
-is double of the specified value, for example using `divisor=8` divides by 16.
+just mapped 1:1, but when `prescaler=1` the values between 8 and 2 give a divisor which
+is double of the specified value (16 to 4), for example using `divisor=8` divides
+actually by 16. That means the values <8 should not be used when `prescaler=1` because
+then you can also just use `prescaler=2`. This is important for the baud rates >=1500000.
                 
-`divisor = 1` results in a actual divisor of 78 when `prescaler=1` and is therefore not used.
+`divisor = 1` results in a actual divisor of 78 when `prescaler=1` and is therefore also not used.
 
 #### Rounding issues ####
 
-Why not just using the simple formula `(CH341_CRYSTAL_FREQ / (prescaler * baud_rate))`? Because we are using integer
-arithmetic and truncating values after the division leads to an error which only goes into
-the positive direction because the fractional part of divisor is lost.
+Why not just using the simple formula `(CH341_CRYSTAL_FREQ / (prescaler * baud_rate))`?
+Because we are using integer arithmetic and truncating values after the division leads to
+an error which only goes into the positive direction because the fractional part of
+divisor is lost.
 
 With floating point arithmetic you would do 5/10 bankers rounding to spread the error equally
 between positive and negative range:
@@ -107,7 +110,8 @@ which is equal to
 
     divisor = TRUNC((10 * CH341_CRYSTAL_FREQ / (prescaler * baud_rate) + 5) / 10)
 
-The first formula above does the same but using dual system integer arithmetic.
+The formula to calculate the baud rate above does the same rounding but using dual
+system integer arithmetic with `(2 * ... + 1) / 2`.
 
 
 ### MOD register 0x14 (Linux: CH341_REG_BPS_MOD, FreeBSD: UCHCOM_REG_BPS_MOD)
@@ -219,7 +223,15 @@ often than the code here.
             return r;
     }
     
-    
+If you don't like the table driven approach to get the prescaler value from the index you
+could also calculate the prescaler value but it is harder to understand:
+
+    prescaler =
+          ((prescaler_index & BIT(2)) ? 1 : 2)   // prescaler 2
+        * ((prescaler_index & BIT(1)) ? 1 : 64)  // prescaler 64
+        * ((prescaler_index & BIT(0)) ? 1 : 8);  // prescaler 8
+
+
 ## How to set the registers?
 
 Write to registers can only be performed two registers at a time. To write to a single register
