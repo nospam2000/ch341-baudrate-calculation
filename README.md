@@ -15,13 +15,16 @@ The contents of this project:
  - [patches](./patches/) : a Linux kernel patch to use the new formula to calculate the baudrate
    and a unit test to compare the result to the original implementation and the implementation
    from Jonathan Olds' patch.
- - [measurements](./measurements/) : measurements of transmissions with some baud rates.
-   The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted
+ - [measurements](./measurements/) : scope measurements of transmissions with some baud rates.
+   The hex constants at the end of the name (e.g. 0x55_0x55) are the data which was transmitted.
+   Includes pictures and csv raw data.
 
 ## How is the baud rate calculated?
 
 It took me a while to figure it out, because all drivers are using magic constants like
-1532620800 which are not clear. The FreeBSD driver was the best reference I could find.
+1532620800 which are not clear. The FreeBSD driver was the best reference I could find,
+but it is also using hardcoded magic register values for 921600 and 307200 baud
+and not an algorithm.
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium and common baud rates like 38400,
@@ -34,7 +37,7 @@ The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor*
  - 'prescaler' scales down the 12 MHz clock by a fixed dividing factor between 1 and 1024 which
    can be choosen from the following 8 values: 1, 2, 8, 16, 64, 128, 512, 1024.
 
-   Most drivers only use the prescaler factors 2, 16, 128 and 1024. 
+   Most drivers only use the prescaler factors 2, 16, 128 and 1024 (register values 0 to 3). 
    Internally the prescaler works by providing three clock dividers which are cascaded
    and can be bypassed separetely.
    
@@ -48,15 +51,6 @@ The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor*
 The ch341 has two registers which are related to the baud rate setting:
  - 0x12: Prescaler register 
  - 0x13: Divisor register
-
-FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
-to me if this has any effect on the baud rate. My speculation is that this has
-something to do with the timing, e.g. how long to wait for a character before sending the USB
-burst transfer or the length of the stop bits above 500000 baud?
-
-They calculate the value using the following formula:
-  
-  UCHCOM_REG_BPS_MOD = (12000000 / 4 / baudrate + 1650 + 255) / 256
 
 ### Prescaler register 0x12 (Linux: CH341_REG_BPS_PRE, FreeBSD: UCHCOM_REG_BPS_PRE)
 
@@ -93,8 +87,8 @@ Using this formula together with choosing the right prescaler will give you an r
 #### Divisor values < 8 ####
 
 The divisor register doesn't treat all values equally. The `divisor` values from 9 to 256 are
-just used normally, but when `prescaler=1` the values between 8 and 2 give a divisor which is just half of its
-value, for example using `divisor=8` only divides by 4.
+just used normally, but when `prescaler=1` the values between 8 and 2 give a divisor which
+is double of the specified value, for example using `divisor=8` divides by 16.
                 
 `divisor = 1` results in a actual divisor of 78 when `prescaler=1` and is therefore not used.
 
@@ -116,6 +110,18 @@ which is equal to
 The first formula above does the same but using dual system integer arithmetic.
 
 
+### MOD register 0x14 (Linux: CH341_REG_BPS_MOD, FreeBSD: UCHCOM_REG_BPS_MOD)
+
+FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
+to me if this has any effect on the baud rate. My speculation is that this has
+something to do with the timing, e.g. how long to wait for a character before sending the USB
+burst transfer or the length of the stop bits above 500000 baud?
+
+They calculate the value using the following (simplified) formula:
+  
+  UCHCOM_REG_BPS_MOD = (12000000 / 4 / baudrate + 1650 + 255) / 256
+
+
 ## How to choose the prescaler value and write the calculation code
 
 You can use this code which iterates through all eight prescalar values in this order:
@@ -130,7 +136,7 @@ often than the code here.
     #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
     #define CH341_REG_BPS_DIV      0x13
-    #define CH341_REG_LCR          0x18
+    #define CH341_REG_LCR1         0x18
     #define CH341_REG_LCR2         0x25
 
     struct ch341_prescalers {
@@ -275,9 +281,10 @@ with a correct stop bit time sends with full speed.
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
    and providing a patch to improve the baud rate calculation
+ - Johan Hovold for maintaining the Linux driver
+ - the authors of the Linux ch341 driver for providing the driver I need
  - the authors of the FreeBSD ch341 driver for giving some more insights. If you read this,
    please tell me the meaning of UCHCOM_REG_BPS_MOD
- - the authors of the Linux ch341 driver for providing the driver I need
  - Apple for providing a ch341 driver. I would be happy if you could use my work to fix
    the baud rate 921600.
 
