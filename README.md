@@ -312,7 +312,8 @@ with a correct stop bit time sends with full speed.
    the baud rate 921600.
 
 ## Links
-- [NetBSD ch341 driver](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN) [NetBSD changlelog](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN) This is really the best implementation I could find so far.
+- [NetBSD ch341 driver](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN)  This is really the best implementation I could find so far.
+- [NetBSD ch341 driver changlelog](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN) 
 - [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c)
 - [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
 - [Linux kernel patch to improve accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
