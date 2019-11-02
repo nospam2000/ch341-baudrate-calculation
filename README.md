@@ -21,14 +21,13 @@ The contents of this project:
 
 ## How is the baud rate calculated?
 
-It took me a while to figure it out, because all drivers are using magic constants like
-1532620800 which are not clear. The FreeBSD driver was the best reference I could find,
-but it is also using hardcoded magic register values for 921600 and 307200 baud
-and not an algorithm.
+It took me a while to figure it out, because most drivers are using magic constants like
+1532620800 which are not clear. The NetBSD driver was the best reference I could find
+(see section links below).
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium and common baud rates like 38400,
-but almost all of them fail at higher baud rates like 921600 and at unusual baud rates
+but many fail at higher baud rates like 921600 and at unusual baud rates
 like 256000.
 
 The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor***
@@ -308,8 +307,8 @@ with a correct stop bit time sends with full speed.
    the baud rate 921600.
 
 ## Links
+- [NetBSD ch341 driver](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN) [NetBSD changlelog](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN) This is really the best implementation I could find so far.
 - [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c)
-- [NetBSD changlelog](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN)
 - [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
 - [Linux kernel patch to improve accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
 - [Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
