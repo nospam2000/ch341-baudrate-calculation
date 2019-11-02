@@ -223,14 +223,21 @@ often than the code here.
             return r;
     }
     
-If you don't like the table driven approach to get the prescaler value from the index you
+If you don't like the table driven approach to get the prescaler value from the index 0..7 you
 could also calculate the prescaler value but it is harder to understand:
 
     prescaler =
-          ((prescaler_index & BIT(2)) ? 1 : 2)   // prescaler 2
-        * ((prescaler_index & BIT(1)) ? 1 : 64)  // prescaler 64
-        * ((prescaler_index & BIT(0)) ? 1 : 8);  // prescaler 8
-
+          ((prescaler_index & BIT(2)) ? 1 : 2)    // prescaler 2
+        * ((prescaler_index & BIT(1)) ? 1 : 64)   // prescaler 64
+        * ((prescaler_index & BIT(0)) ? 1 : 8);   // prescaler 8
+        
+    prescaler_register_value = (
+              ((prescaler_index >> 1) & (BIT(0) | BIT(1)))
+            | ((prescaler_index << 2) & BIT(2))
+        ) ^ (BIT(0) | BIT(1) | BIT(2)); // all 3 bits inverted
+        
+    prescaler_register_value |= BIT(7); // don't buffer the data until buffer full
+        
 
 ## How to set the registers?
 
