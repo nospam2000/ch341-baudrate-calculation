@@ -21,14 +21,16 @@ The contents of this project:
 
 ## How is the baud rate calculated?
 
-It took me a while to figure it out, because all drivers are using magic constants like
-1532620800 which are not clear. The FreeBSD driver was the best reference I could find,
-but it is also using hardcoded magic register values for 921600 and 307200 baud
-and not an algorithm.
+It took me a while to figure it out, because most drivers are using magic constants like
+1532620800 which are not clear.
+
+The NetBSD driver was the best reference I could find (see section links below), I
+just found it after I created this whole project. You should really consider to use
+their work.
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium and common baud rates like 38400,
-but almost all of them fail at higher baud rates like 921600 and at unusual baud rates
+but many fail at higher baud rates like 921600 and at unusual baud rates
 like 256000.
 
 The base formular is very simple: ***baud rate = 12000000 / prescaler / divisor***
@@ -116,10 +118,12 @@ system integer arithmetic with `(2 * ... + 1) / 2`.
 
 ### MOD register 0x14 (Linux: CH341_REG_BPS_MOD, FreeBSD: UCHCOM_REG_BPS_MOD)
 
-FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but it is unclear
-to me if this has any effect on the baud rate. My speculation is that this has
-something to do with the timing, e.g. how long to wait for a character before sending the USB
-burst transfer or the length of the stop bits above 500000 baud?
+FreeBSD additionally sets a value to register 0x14 (UCHCOM_REG_BPS_MOD) but the reason
+is unclear to me. It doesn't have a direct influence on the baud rate.
+
+My speculation is that this could have something to do with other timing based setting,
+e.g. how long to wait for a character before sending the USB transfer or the
+length of the stop bits above 500000 baud?
 
 They calculate the value using the following (simplified) formula:
   
@@ -243,14 +247,14 @@ could also calculate the prescaler value but it is harder to understand:
 
 Write to registers can only be performed two registers at a time. To write to a single register
 either write two times the same value to the same register, or use a dummy register to write a
-dummy value as second value. Fortunately we need to write exactly two register so we need one
+dummy value as second value. Fortunately we need to write exactly two registers so we need one
 call and one USB request.
 
     prescaler_register_value |= BIT(7); // don't wait until buffer contains 32 characters before sending
     divisor_register_value = 256 - divisor;
     ch341_control_out(dev, CH341_REQ_WRITE_REG,
-      (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-      (divisor_register_value << 8) | prescaler_register_value);
+      (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,         // the two register addresses
+      (divisor_register_value << 8) | prescaler_register_value); // the two register values
 
 ## How to calculate the error
 Because of rounding you always have an error when `12000000 / wanted baud rate` is not a natural number.
@@ -308,10 +312,13 @@ with a correct stop bit time sends with full speed.
    the baud rate 921600.
 
 ## Links
-- [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c) 
+- [NetBSD ch341 driver](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN)  This is really the best implementation I could find so far.
+- [NetBSD ch341 driver changlelog](http://cvsweb.netbsd.org/bsdweb.cgi/src/sys/dev/usb/uchcom.c?only_with_tag=MAIN) 
+- [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c)
 - [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
-- [Linux kernel patch to improve accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
-- [Linux kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
+- [Linux ch341 kernel patch to improve baud rate mail thread](https://lore.kernel.org/linux-usb/001001d590e9$262004f0$72600ed0$@co.nz/T/#t)
+- [Linux ch341 kernel patch to improve baud rate accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
+- [Linux ch341 kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
 - [Linux kernel patch which improved the baud rate calculation and adds register names](https://lore.kernel.org/patchwork/patch/139700/)
 
 
