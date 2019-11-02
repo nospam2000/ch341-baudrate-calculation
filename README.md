@@ -22,8 +22,10 @@ The contents of this project:
 ## How is the baud rate calculated?
 
 It took me a while to figure it out, because most drivers are using magic constants like
-1532620800 which are not clear. The NetBSD driver was the best reference I could find
-(see section links below).
+1532620800 which are not clear.
+
+The NetBSD driver was the best reference I could find (see section links below), I
+just found it after I created this whole project.
 
 The hardware has a great flexibility and can do most baud rates with a error smaller than 0.2%.
 Most drivers give an acceptable baud rate for the medium and common baud rates like 38400,
