@@ -248,8 +248,8 @@ call and one USB request.
     prescaler_register_value |= BIT(7); // don't wait until buffer contains 32 characters before sending
     divisor_register_value = 256 - divisor;
     ch341_control_out(dev, CH341_REQ_WRITE_REG,
-      (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,
-      (divisor_register_value << 8) | prescaler_register_value);
+      (CH341_REG_BPS_DIV      << 8) | CH341_REG_BPS_PRE,         // the two register addresses
+      (divisor_register_value << 8) | prescaler_register_value); // the two register values
 
 ## How to calculate the error
 Because of rounding you always have an error when `12000000 / wanted baud rate` is not a natural number.
