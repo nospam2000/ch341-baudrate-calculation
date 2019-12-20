@@ -320,5 +320,4 @@ with a correct stop bit time sends with full speed.
 - [Linux ch341 kernel patch to improve baud rate accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
 - [Linux ch341 kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
 - [Linux kernel patch which improved the baud rate calculation and adds register names](https://lore.kernel.org/patchwork/patch/139700/)
-
-
+- [alternative Mac OSX driver for CH340/CH341](https://github.com/adrianmihalko/ch340g-ch34g-ch34x-mac-os-x-driver)
