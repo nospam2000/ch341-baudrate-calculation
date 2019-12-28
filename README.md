@@ -306,10 +306,10 @@ The formula of the old driver might result in a baud rate of the CH341 which is 
 
 Most baud rates cannot be exactly resembled by hardware. This holds true for the CH341 as well as for the UART of your microcontroller which is connected to the CH341. As long as the _real baudrates_ of both sides are within a small enough tolerance window it works.
 
-I use the ATmega328P with 15200 baud in this example, but the principle is the same for other microcontrollers and baud rates.
+I use the ATmega328P with 115200 baud in this example, but the principle is the same for other microcontrollers and baud rates.
 The ATmega328P is often used with a oscillator frequency of 16 MHz. The baud rate is derived from that clock with this formula (using double speed mode with U2Xn=1): `baud = fosc / 8*(UBRR + 1)`
 
-The best fit for 115200 baud is with `UBRR=16` which gives a real baud rate of 117647 (error=+2.1%). This doesn't match the 115385 baud of the CH341 for the nominal baud rate 115200 baud very well. Depending on you calculation you might also be using `UBRR=17` which results in a real baud rate of 111111 (error=-3.6%).
+The best fit for 115200 baud is with `UBRR=16` which gives a real baud rate of 117647 (error=+2.1%). This doesn't match the 115385 baud of the CH341 for the nominal baud rate 115200 baud very well. Depending on you calculation you might also be using `UBRR=17` which results in a real baud rate of 111111 (error=-3.6%) and is even worse.
 
 What can you do to solve the problem?
  1. use baud rates like 125000 or 250000 which can be exactly derived from the oscillator frequency 16 MHz and have an error of 0% or use lower standard baud rates like 38400 which also have smaller errors
