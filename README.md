@@ -301,20 +301,22 @@ with a correct stop bit time sends with full speed.
 ![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
 
 ## With the new driver my application no longer works
-With the old driver I was able to use the baud rate 115200 with my hardware but with the new formula in the driver it does not longer work. What happened?
+With the old driver you were able to use the baud rate 115200 with your hardware but with the new formula in the driver it does not longer work. What happened?
+The formula of the old driver might result in a baud rate of the CH341 which is closer to the real baud rate of your microcontroller although it is closer to the nomimal baud rate.
 
-I use the ATmega328P in this example, but the principle is the same for other microcontrollers, just the formula is different.
+Most baud rates cannot be exactly resembled by hardware. This holds true for the CH341 as well as for the UART of your microcontroller which is connected to the CH341. As long as the _real baudrates_ of both sides are within a small enough tolerance window it works.
 
+I use the ATmega328P with 15200 baud in this example, but the principle is the same for other microcontrollers and baud rates.
 The ATmega328P is often used with a oscillator frequency of 16 MHz. The baud rate is derived from that clock with this formula (using double speed mode with U2Xn=1): `baud = fosc / 8*(UBRR + 1)`
 
-The best fit for 115200 is with `UBRR=16` which gives a real baud rate of 117647 (error=+2.1%). This doesn't match the 115385 baud of the CH341 for the nominal baud rate 115200 baud very well.
+The best fit for 115200 baud is with `UBRR=16` which gives a real baud rate of 117647 (error=+2.1%). This doesn't match the 115385 baud of the CH341 for the nominal baud rate 115200 baud very well. Depending on you calculation you might also be using `UBRR=17` which results in a real baud rate of 111111 (error=-3.6%).
 
-What can you do?
- - use baud rates like 125000 or 250000 which can be exactly derived from the oscillator frequency 16 MHz and have an error of 0% or lower baud rates like 38400 which also have smaller errors
- - calculate the real baud rate of the MCU and use that as baud rate for your application on the PC, e.g. for the example you would have to use 117647 baud instead of the nominal value of 115200
- - use a 'baud rate oscillator' for your ATmega328P with a frequency of e.g. 18.4320MHz or 14.7456MHz which can handle the standard baud rates with a small error
+What can you do to solve the problem?
+ 1. use baud rates like 125000 or 250000 which can be exactly derived from the oscillator frequency 16 MHz and have an error of 0% or use lower standard baud rates like 38400 which also have smaller errors
+ 1. calculate and use the _real baud rate_ of your microcontroller (instead of the _nominal baud rate_) for your application on the PC, e.g. for the ATmega328P example you would have to use 117647 baud instead of the nominal value of 115200 baud
+ 1. use a 'baud rate oscillator' for your ATmega328P with a frequency of e.g. 18.4320MHz or 14.7456MHz which can handle the standard baud rates with a small error
  
-Please refer also to [Data sheet for ATmega 48, 88, 168 and 328].
+See also the link to the ATmega datasheet in the [Links] section.
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
