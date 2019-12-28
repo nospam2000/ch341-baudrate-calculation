@@ -300,6 +300,21 @@ with a correct stop bit time sends with full speed.
 #### 3000000 baud: 6 stop bits ####
 ![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
 
+## With the new driver my application no longer works
+With the old driver I was able to use the baud rate 115200 with my hardware but with the new formula in the driver it does not longer work. What happened?
+
+I use the ATmega328P in this example, but the principle is the same for other microcontrollers, just the formula is different.
+
+The ATmega328P is often used with a oscillator frequency of 16 MHz. The baud rate is derived from that clock with this formula (using double speed mode with U2Xn=1): `baud = fosc / 8*(UBRR + 1)`
+
+The best fit for 115200 is with `UBRR=16` which gives a real baud rate of 117647 (error=+2.1%). This doesn't match the 115385 baud of the CH341 for the nominal baud rate 115200 baud very well.
+
+What can you do?
+ - use baud rates like 125000 or 250000 which can be exactly derived from the oscillator frequency 16 MHz and have an error of 0% or lower baud rates like 38400 which also have smaller errors
+ - calculate the real baud rate of the MCU and use that as baud rate for your application on the PC, e.g. for the example you would have to use 117647 baud instead of the nominal value of 115200
+ - use a 'baud rate oscillator' for your ATmega328P with a frequency of e.g. 18.4320MHz or 14.7456MHz which can handle the standard baud rates with a small error
+ 
+Please refer also to [Data sheet for ATmega 48, 88, 168 and 328].
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
@@ -322,3 +337,4 @@ with a correct stop bit time sends with full speed.
 - [Linux kernel patch which improved the baud rate calculation and adds register names](https://lore.kernel.org/patchwork/patch/139700/)
 - [Official WCH CH341 download page](http://www.wch.cn/downloads/CH341SER_LINUX_ZIP.html)
 - [Archives of old Mac OSX CH340/CH341 drivers for Mac OSX version Mojave or 10.14 or earlier](https://github.com/adrianmihalko/ch340g-ch34g-ch34x-mac-os-x-driver). These are not needed for newer OSX versions which already have a driver from Apple (which also suffers from bad baudrate calculation).
+- [Data sheet for ATmega 48, 88, 168 and 328](http://ww1.microchip.com/downloads/en/DeviceDoc/ATmega48A-PA-88A-PA-168A-PA-328-P-DS-DS40002061A.pdf), please refer specifically to chapters "20.3.1 Internal Clock Generation – The Baud Rate Generator" and "20.10 Examples of Baud Rate Setting"
