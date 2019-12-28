@@ -302,7 +302,7 @@ with a correct stop bit time sends with full speed.
 
 ## With the new driver my application no longer works
 With the old driver you were able to use the baud rate 115200 with your hardware but with the new formula in the driver it does not longer work. What happened?
-The formula of the old driver might result in a baud rate of the CH341 which is closer to the real baud rate of your microcontroller although it is closer to the nomimal baud rate.
+The formula of the old driver might result in a baud rate of the CH341 which is closer to the real baud rate of your microcontroller although it is closer to the nominal (the requested) baud rate.
 
 Most baud rates cannot be exactly resembled by hardware. This holds true for the CH341 as well as for the UART of your microcontroller which is connected to the CH341. As long as the _real baudrates_ of both sides are within a small enough tolerance window it works.
 
