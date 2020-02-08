@@ -86,6 +86,10 @@ Here the formula for the register values based on the `prescaler` and `divisor` 
 
 Using this formula together with choosing the right prescaler will give you an relative baud rate error <= 0.16% for the common baud rates. For all other baud rates between 46 to 100000 (the uncommon ones) the error is < 0.8% . Above 100000 baud you should only use selected baud rates.
 
+It seems that the tolerance window of receiving frames get smaller when smaller prescaler values are used. See the link [Linux ch341 kernel 2nd patch which fixes some issues with the first patch] below for a fixed Linux kernel patch.
+That means when two combinations of prescaler\*divisor give the same error you should prefer the one with the larger prescaler. I haven't measured this myself yet, the knowledge comes from feedback to the latest kernel patch.
+
+
 #### Divisor values <= 8 when prescaler=1 ####
 
 The divisor register doesn't treat all values equally. The `divisor` values from 9 to 256 are
@@ -141,6 +145,8 @@ In [./patches/Linux_4.14.114_ch341.patch](./patches/Linux_4.14.114_ch341.patch) 
 can find a patch which can directly applied to a Linux kernel and is updated more
 often than the code here.
 
+    // TODO: this implementation ignores the fact that smaller prescaler values
+    //       result in smaller tolerance window for receiving frames 
     #define CH341_OSC_FREQ    (12000000UL)
     #define CH341_REG_BPS_PRE      0x12
     #define CH341_REG_BPS_DIV      0x13
@@ -301,6 +307,16 @@ with a correct stop bit time sends with full speed.
 ![scope picture](./measurements/3000000_baud_0x55_0x55/F0006TEK.BMP)
 
 ## With the new driver my application no longer works
+There are two possible reasons why this happens
+
+### Problem a) The tolerance window for receiving frames got smaller ###
+
+The error tolerance window might now be smaller because a different prescaler value has been chosen.
+
+
+
+### Problem b) The calculated baudrate is now nearer to nominal rate, but farer from the baud rate of communication partner  ###
+
 With the old driver you were able to use the baud rate 115200 with your hardware but with the new formula in the driver it does not longer work. What happened?
 The formula of the old driver might result in a baud rate of the CH341 which is closer to the real baud rate of your microcontroller although it is closer to the nominal (the requested) baud rate.
 
@@ -311,12 +327,15 @@ The ATmega328P is often used with a oscillator frequency of 16 MHz. The baud rat
 
 The best fit for 115200 baud is with `UBRR=16` which gives a real baud rate of 117647 (error=+2.1%). This doesn't match the 115385 baud of the CH341 for the nominal baud rate 115200 baud very well. Depending on you calculation you might also be using `UBRR=17` which results in a real baud rate of 111111 (error=-3.6%) and is even worse.
 
-What can you do to solve the problem?
+### What can you do to solve the problem? ###
+ 1. Use the updated kernel driver patch, see link [Linux ch341 kernel 2nd patch which fixes some issues with the first patch] below
  1. use baud rates like 125000 or 250000 which can be exactly derived from the oscillator frequency 16 MHz and have an error of 0% or use lower standard baud rates like 38400 which also have smaller errors
  1. calculate and use the _real baud rate_ of your microcontroller (instead of the _nominal baud rate_) for your application on the PC, e.g. for the ATmega328P example you would have to use 117647 baud instead of the nominal value of 115200 baud
  1. use a 'baud rate oscillator' for your ATmega328P with a frequency of e.g. 18.4320MHz or 14.7456MHz which can handle the standard baud rates with a small error
  
 See also the link to the ATmega datasheet in the [Links] section.
+
+
 
 ## Thanks to
  - Jonathan Olds for his efforts of analyzing and measuring the baud rate errors
@@ -334,6 +353,7 @@ See also the link to the ATmega datasheet in the [Links] section.
 - [FreeBSD ch341 driver](https://github.com/freebsd/freebsd/blob/master/sys/dev/usb/serial/uchcom.c)
 - [Linux ch341 driver](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c)
 - [Linux ch341 kernel patch to improve baud rate mail thread](https://lore.kernel.org/linux-usb/001001d590e9$262004f0$72600ed0$@co.nz/T/#t)
+- [Linux ch341 kernel 2nd patch which fixes some issues with the first patch](https://lore.kernel.org/linux-usb/20200206111819.20829-1-johan@kernel.org/)
 - [Linux ch341 kernel patch to improve baud rate accuracy from Jonathan Olds](https://patchwork.kernel.org/patch/10983017/)
 - [Linux ch341 kernel patch which modified the baud rate calculation (no longer set register 0x2c)](https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/commit/drivers/usb/serial/ch341.c?id=4e46c410e050bcac36deadbd8e20449d078204e8)
 - [Linux kernel patch which improved the baud rate calculation and adds register names](https://lore.kernel.org/patchwork/patch/139700/)
